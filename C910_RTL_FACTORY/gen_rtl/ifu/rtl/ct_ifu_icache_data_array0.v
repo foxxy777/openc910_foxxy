@@ -291,7 +291,7 @@ ct_spsram_1024x32  x_ct_spsram_1024x32_bank1 (
   .GWEN                               (ifu_icache_data_array0_wen_b      ),
   .Q                                  (icache_ifu_data_array0_bank1_dout ),
   .WEN                                (ifu_icache_data_array0_bank1_bwen )
-);
+);   
 
 `ifdef ICACHE_256K
 ct_spsram_8192x32  x_ct_spsram_8192x32_bank2 (
