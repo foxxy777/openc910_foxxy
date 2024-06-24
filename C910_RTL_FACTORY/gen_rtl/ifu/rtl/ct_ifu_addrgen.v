@@ -14,7 +14,7 @@ limitations under the License.
 */
 
 // &ModuleBeg; @22
-module ct_ifu_addrgen(
+module ct_ifu_addrgen( 
   addrgen_btb_index,
   addrgen_btb_tag,
   addrgen_btb_target_pc,
