@@ -94,6 +94,7 @@ wire             ifu_icache_data_array0_wen_b;
 wire    [15 :0]  ifu_icache_index;                   
 wire             pad_yy_icg_scan_en;               
 
+//region clke
 //Gate Clk
 // &Instance("gated_clk_cell", "x_data_bank0_clk"); @28
 gated_clk_cell  x_data_bank0_clk (
@@ -142,6 +143,8 @@ gated_clk_cell  x_data_bank3_clk (
   .pad_yy_icg_scan_en (pad_yy_icg_scan_en)
 );
 assign data_local_en_bank3 = ifu_icache_data_array0_bank3_clk_en;
+//
+
 
 //Instance Logic
 //Support Bit Write
@@ -161,28 +164,29 @@ assign ifu_icache_data_array0_bank2_din[31:0] = ifu_icache_data_array0_din[ 63: 
 assign ifu_icache_data_array0_bank3_din[31:0] = ifu_icache_data_array0_din[ 31:  0];
 
 
+
 //Icache Size define
 //csky vperl_off
-`ifdef ICACHE_256K
-parameter WIDTH = 15;
-`endif
-`ifdef ICACHE_128K
-parameter WIDTH = 14;
-`endif
-`ifdef ICACHE_64K
-parameter WIDTH = 13;
-`endif
+//`ifdef ICACHE_256K
+//parameter WIDTH = 15;
+//`endif
+//`ifdef ICACHE_128K
+//parameter WIDTH = 14;
+//`endif
+//`ifdef ICACHE_64K
+//parameter WIDTH = 13;
+//`endif
 `ifdef ICACHE_32K
 parameter WIDTH = 12;
 `endif
 
-
-`ifdef L1_CACHE_ECC
-`ifdef ICACHE_64K
-ct_spsram_2048x33  x_ct_spsram_2048x33_bank0 (
-`else
-ct_spsram_1024x33  x_ct_spsram_1024x33_bank0 (
-`endif
+//region ECC_SRAM 
+//`ifdef L1_CACHE_ECC
+//`ifdef ICACHE_64K
+//ct_spsram_2048x33  x_ct_spsram_2048x33_bank0 (
+//`else
+//ct_spsram_1024x33  x_ct_spsram_1024x33_bank0 (
+//`endif
   `ifdef MEM_CFG_IN
   .mem_cfg_in                         (mem_cfg_in                        ),
   `endif //MEM_CFG_IN
@@ -193,13 +197,13 @@ ct_spsram_1024x33  x_ct_spsram_1024x33_bank0 (
   .GWEN                               (ifu_icache_data_array0_wen_b      ),
   .Q                                  (icache_ifu_data_array0_bank0_dout ),
   .WEN                                (ifu_icache_data_array0_bank0_bwen )
-);
-
-`ifdef ICACHE_64K
-ct_spsram_2048x33  x_ct_spsram_2048x33_bank1 (
-`else
-ct_spsram_1024x33  x_ct_spsram_1024x33_bank1 (
-`endif
+//);
+//
+//`ifdef ICACHE_64K
+//ct_spsram_2048x33  x_ct_spsram_2048x33_bank1 (
+//`else
+//ct_spsram_1024x33  x_ct_spsram_1024x33_bank1 (
+//`endif
   `ifdef MEM_CFG_IN
   .mem_cfg_in                         (mem_cfg_in                        ),
   `endif //MEM_CFG_IN
@@ -210,13 +214,13 @@ ct_spsram_1024x33  x_ct_spsram_1024x33_bank1 (
   .GWEN                               (ifu_icache_data_array0_wen_b      ),
   .Q                                  (icache_ifu_data_array0_bank1_dout ),
   .WEN                                (ifu_icache_data_array0_bank1_bwen )
-);
-
-`ifdef ICACHE_64K
-ct_spsram_2048x33  x_ct_spsram_2048x33_bank2 (
-`else
-ct_spsram_1024x33  x_ct_spsram_1024x33_bank2 (
-`endif
+//);
+//
+//`ifdef ICACHE_64K
+//ct_spsram_2048x33  x_ct_spsram_2048x33_bank2 (
+//`else
+//ct_spsram_1024x33  x_ct_spsram_1024x33_bank2 (
+//`endif
   `ifdef MEM_CFG_IN
   .mem_cfg_in                         (mem_cfg_in                        ),
   `endif //MEM_CFG_IN
@@ -227,13 +231,13 @@ ct_spsram_1024x33  x_ct_spsram_1024x33_bank2 (
   .GWEN                               (ifu_icache_data_array0_wen_b      ),
   .Q                                  (icache_ifu_data_array0_bank2_dout ),
   .WEN                                (ifu_icache_data_array0_bank2_bwen )
-);
-
-`ifdef ICACHE_64K
-ct_spsram_2048x33  x_ct_spsram_2048x33_bank3 (
-`else
-ct_spsram_1024x33  x_ct_spsram_1024x33_bank3 (
-`endif
+//);
+//
+//`ifdef ICACHE_64K
+//ct_spsram_2048x33  x_ct_spsram_2048x33_bank3 (
+//`else
+//ct_spsram_1024x33  x_ct_spsram_1024x33_bank3 (
+//`endif
   `ifdef MEM_CFG_IN
   .mem_cfg_in                         (mem_cfg_in                        ),
   `endif //MEM_CFG_IN
@@ -244,46 +248,49 @@ ct_spsram_1024x33  x_ct_spsram_1024x33_bank3 (
   .GWEN                               (ifu_icache_data_array0_wen_b      ),
   .Q                                  (icache_ifu_data_array0_bank3_dout ),
   .WEN                                (ifu_icache_data_array0_bank3_bwen )
-);
-`else //L1_CACHE_ECC
-`ifdef ICACHE_256K
-ct_spsram_8192x32  x_ct_spsram_8192x32_bank0 (
-`endif
-`ifdef ICACHE_128K
-ct_spsram_4096x32  x_ct_spsram_4096x32_bank0 (
-`endif
-`ifdef ICACHE_64K
-ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank0 (
-`endif
+//);
+//`else //L1_CACHE_ECC
+//endregion ECC_SRAM
+
+//region NO_ECC_SRAM
+//`ifdef ICACHE_256K
+//ct_spsram_8192x32  x_ct_spsram_8192x32_bank0 (
+//`endif
+//`ifdef ICACHE_128K
+//ct_spsram_4096x32  x_ct_spsram_4096x32_bank0 (
+//`endif
+//`ifdef ICACHE_64K
+//ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank0 (
+//`endif
 `ifdef ICACHE_32K
 ct_spsram_1024x32  x_ct_spsram_1024x32_bank0 (
 `endif
-  `ifdef MEM_CFG_IN
-  .mem_cfg_in                         (mem_cfg_in                        ),
-  `endif //MEM_CFG_IN
-  .A                                  (ifu_icache_index[WIDTH:3]         ),
-  .CEN                                (ifu_icache_data_array0_bank0_cen_b),
+//  `ifdef MEM_CFG_IN
+//  .mem_cfg_in                         (mem_cfg_in                        ),//mem cfg
+//  `endif //MEM_CFG_IN
+  .A                                  (ifu_icache_index[WIDTH:3]         ),//ADDR = INDEX [12:3]=10bit=1024 entry
+  .CEN                                (ifu_icache_data_array0_bank0_cen_b),// chip enable
   .CLK                                (data_clk_bank0                    ),
-  .D                                  (ifu_icache_data_array0_bank0_din  ),
-  .GWEN                               (ifu_icache_data_array0_wen_b      ),
-  .Q                                  (icache_ifu_data_array0_bank0_dout ),
-  .WEN                                (ifu_icache_data_array0_bank0_bwen )
+  .D                                  (ifu_icache_data_array0_bank0_din  ),//data in
+  .GWEN                               (ifu_icache_data_array0_wen_b      ),//write enable
+  .Q                                  (icache_ifu_data_array0_bank0_dout ),//data out
+  .WEN                                (ifu_icache_data_array0_bank0_bwen )//byte strobe
 );
-`ifdef ICACHE_256K
-ct_spsram_8192x32  x_ct_spsram_8192x32_bank1 (
-`endif
-`ifdef ICACHE_128K
-ct_spsram_4096x32  x_ct_spsram_4096x32_bank1 (
-`endif
-`ifdef ICACHE_64K
-ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank1 (
-`endif
+//`ifdef ICACHE_256K
+//ct_spsram_8192x32  x_ct_spsram_8192x32_bank1 (
+//`endif
+//`ifdef ICACHE_128K
+//ct_spsram_4096x32  x_ct_spsram_4096x32_bank1 (
+//`endif
+//`ifdef ICACHE_64K
+//ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank1 (
+//`endif
 `ifdef ICACHE_32K
 ct_spsram_1024x32  x_ct_spsram_1024x32_bank1 (
 `endif
-  `ifdef MEM_CFG_IN
-  .mem_cfg_in                         (mem_cfg_in                        ),
-  `endif //MEM_CFG_IN
+//  `ifdef MEM_CFG_IN
+//  .mem_cfg_in                         (mem_cfg_in                        ),
+//  `endif //MEM_CFG_IN
   .A                                  (ifu_icache_index[WIDTH:3]         ),
   .CEN                                (ifu_icache_data_array0_bank1_cen_b),
   .CLK                                (data_clk_bank1                    ),
@@ -293,21 +300,21 @@ ct_spsram_1024x32  x_ct_spsram_1024x32_bank1 (
   .WEN                                (ifu_icache_data_array0_bank1_bwen )
 );
 
-`ifdef ICACHE_256K
-ct_spsram_8192x32  x_ct_spsram_8192x32_bank2 (
-`endif
-`ifdef ICACHE_128K
-ct_spsram_4096x32  x_ct_spsram_4096x32_bank2 (
-`endif
-`ifdef ICACHE_64K
-ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank2 (
-`endif
+//`ifdef ICACHE_256K
+//ct_spsram_8192x32  x_ct_spsram_8192x32_bank2 (
+//`endif
+//`ifdef ICACHE_128K
+//ct_spsram_4096x32  x_ct_spsram_4096x32_bank2 (
+//`endif
+//`ifdef ICACHE_64K
+//ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank2 (
+//`endif
 `ifdef ICACHE_32K
 ct_spsram_1024x32  x_ct_spsram_1024x32_bank2 (
 `endif
-  `ifdef MEM_CFG_IN
-  .mem_cfg_in                         (mem_cfg_in                        ),
-  `endif //MEM_CFG_IN
+//  `ifdef MEM_CFG_IN
+//  .mem_cfg_in                         (mem_cfg_in                        ),
+//  `endif //MEM_CFG_IN
   .A                                  (ifu_icache_index[WIDTH:3]         ),
   .CEN                                (ifu_icache_data_array0_bank2_cen_b),
   .CLK                                (data_clk_bank2                    ),
@@ -316,21 +323,21 @@ ct_spsram_1024x32  x_ct_spsram_1024x32_bank2 (
   .Q                                  (icache_ifu_data_array0_bank2_dout ),
   .WEN                                (ifu_icache_data_array0_bank2_bwen )
 );
-`ifdef ICACHE_256K
-ct_spsram_8192x32  x_ct_spsram_8192x32_bank3 (
-`endif
-`ifdef ICACHE_128K
-ct_spsram_4096x32  x_ct_spsram_4096x32_bank3 (
-`endif
-`ifdef ICACHE_64K
-ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank3 (
-`endif
+//`ifdef ICACHE_256K
+//ct_spsram_8192x32  x_ct_spsram_8192x32_bank3 (
+//`endif
+//`ifdef ICACHE_128K
+//ct_spsram_4096x32  x_ct_spsram_4096x32_bank3 (
+//`endif
+//`ifdef ICACHE_64K
+//ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank3 (
+//`endif
 `ifdef ICACHE_32K
 ct_spsram_1024x32  x_ct_spsram_1024x32_bank3 (
 `endif
-  `ifdef MEM_CFG_IN
-  .mem_cfg_in                         (mem_cfg_in                        ),
-  `endif //MEM_CFG_IN
+//  `ifdef MEM_CFG_IN
+//  .mem_cfg_in                         (mem_cfg_in                        ),
+//  `endif //MEM_CFG_IN
   .A                                  (ifu_icache_index[WIDTH:3]         ),
   .CEN                                (ifu_icache_data_array0_bank3_cen_b),
   .CLK                                (data_clk_bank3                    ),
@@ -341,6 +348,7 @@ ct_spsram_1024x32  x_ct_spsram_1024x32_bank3 (
 );
 
 `endif //L1_CACHE_ECC
+//endregion NO_ECC_SRAM
 
 //csky vperl_on
 endmodule
