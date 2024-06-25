@@ -329,16 +329,7 @@ begin
 end
 
 // &CombBeg; @79
-always @( ifctrl_l1_refill_ins_inv
-       or refill_grnt
-       or ifctrl_l1_refill_ins_inv_dn
-       or inv_wfd_back
-       or refill_cur_state[3:0]
-       or ipb_refill_trans_err
-       or tsize
-       or change_flow
-       or ipb_refill_data_vld
-       or refill_start)
+always @*
 begin
 case(refill_cur_state[3:0])
 IDLE     : if(refill_start)
@@ -347,7 +338,7 @@ IDLE     : if(refill_start)
            refill_next_state[3:0] = IDLE;
 REQ      : if(change_flow && !refill_grnt)
            refill_next_state[3:0] = IDLE;//before grnt, set req = 0, biu will ignore this req
-           else if(!change_flow && refill_grnt)
+           else if(!change_flow && refill_grnt) 
            refill_next_state[3:0] = WFD1;
            else if(change_flow && refill_grnt)
            refill_next_state[3:0] = INV_WFD1;

@@ -187,16 +187,16 @@ parameter WIDTH = 12;
 //`else
 //ct_spsram_1024x33  x_ct_spsram_1024x33_bank0 (
 //`endif
-  `ifdef MEM_CFG_IN
-  .mem_cfg_in                         (mem_cfg_in                        ),
-  `endif //MEM_CFG_IN
-  .A                                  (ifu_icache_index[WIDTH:3]         ),
-  .CEN                                (ifu_icache_data_array0_bank0_cen_b),
-  .CLK                                (data_clk_bank0                    ),
-  .D                                  (ifu_icache_data_array0_bank0_din  ),
-  .GWEN                               (ifu_icache_data_array0_wen_b      ),
-  .Q                                  (icache_ifu_data_array0_bank0_dout ),
-  .WEN                                (ifu_icache_data_array0_bank0_bwen )
+//  `ifdef MEM_CFG_IN
+//  .mem_cfg_in                         (mem_cfg_in                        ),
+//  `endif //MEM_CFG_IN
+//  .A                                  (ifu_icache_index[WIDTH:3]         ),
+//  .CEN                                (ifu_icache_data_array0_bank0_cen_b),
+//  .CLK                                (data_clk_bank0                    ),
+//  .D                                  (ifu_icache_data_array0_bank0_din  ),
+//  .GWEN                               (ifu_icache_data_array0_wen_b      ),
+//  .Q                                  (icache_ifu_data_array0_bank0_dout ),
+//  .WEN                                (ifu_icache_data_array0_bank0_bwen )
 //);
 //
 //`ifdef ICACHE_64K
@@ -204,16 +204,16 @@ parameter WIDTH = 12;
 //`else
 //ct_spsram_1024x33  x_ct_spsram_1024x33_bank1 (
 //`endif
-  `ifdef MEM_CFG_IN
-  .mem_cfg_in                         (mem_cfg_in                        ),
-  `endif //MEM_CFG_IN
-  .A                                  (ifu_icache_index[WIDTH:3]         ),
-  .CEN                                (ifu_icache_data_array0_bank1_cen_b),
-  .CLK                                (data_clk_bank1                    ),
-  .D                                  (ifu_icache_data_array0_bank1_din  ),
-  .GWEN                               (ifu_icache_data_array0_wen_b      ),
-  .Q                                  (icache_ifu_data_array0_bank1_dout ),
-  .WEN                                (ifu_icache_data_array0_bank1_bwen )
+//  `ifdef MEM_CFG_IN
+//  .mem_cfg_in                         (mem_cfg_in                        ),
+//  `endif //MEM_CFG_IN
+//  .A                                  (ifu_icache_index[WIDTH:3]         ),
+//  .CEN                                (ifu_icache_data_array0_bank1_cen_b),
+//  .CLK                                (data_clk_bank1                    ),
+//  .D                                  (ifu_icache_data_array0_bank1_din  ),
+//  .GWEN                               (ifu_icache_data_array0_wen_b      ),
+//  .Q                                  (icache_ifu_data_array0_bank1_dout ),
+//  .WEN                                (ifu_icache_data_array0_bank1_bwen )
 //);
 //
 //`ifdef ICACHE_64K
@@ -221,16 +221,16 @@ parameter WIDTH = 12;
 //`else
 //ct_spsram_1024x33  x_ct_spsram_1024x33_bank2 (
 //`endif
-  `ifdef MEM_CFG_IN
-  .mem_cfg_in                         (mem_cfg_in                        ),
-  `endif //MEM_CFG_IN
-  .A                                  (ifu_icache_index[WIDTH:3]         ),
-  .CEN                                (ifu_icache_data_array0_bank2_cen_b),
-  .CLK                                (data_clk_bank2                    ),
-  .D                                  (ifu_icache_data_array0_bank2_din  ),
-  .GWEN                               (ifu_icache_data_array0_wen_b      ),
-  .Q                                  (icache_ifu_data_array0_bank2_dout ),
-  .WEN                                (ifu_icache_data_array0_bank2_bwen )
+//  `ifdef MEM_CFG_IN
+//  .mem_cfg_in                         (mem_cfg_in                        ),
+//  `endif //MEM_CFG_IN
+//  .A                                  (ifu_icache_index[WIDTH:3]         ),
+//  .CEN                                (ifu_icache_data_array0_bank2_cen_b),
+//  .CLK                                (data_clk_bank2                    ),
+//  .D                                  (ifu_icache_data_array0_bank2_din  ),
+//  .GWEN                               (ifu_icache_data_array0_wen_b      ),
+//  .Q                                  (icache_ifu_data_array0_bank2_dout ),
+//  .WEN                                (ifu_icache_data_array0_bank2_bwen )
 //);
 //
 //`ifdef ICACHE_64K
@@ -238,16 +238,16 @@ parameter WIDTH = 12;
 //`else
 //ct_spsram_1024x33  x_ct_spsram_1024x33_bank3 (
 //`endif
-  `ifdef MEM_CFG_IN
-  .mem_cfg_in                         (mem_cfg_in                        ),
-  `endif //MEM_CFG_IN
-  .A                                  (ifu_icache_index[WIDTH:3]         ),
-  .CEN                                (ifu_icache_data_array0_bank3_cen_b),
-  .CLK                                (data_clk_bank3                    ),
-  .D                                  (ifu_icache_data_array0_bank3_din  ),
-  .GWEN                               (ifu_icache_data_array0_wen_b      ),
-  .Q                                  (icache_ifu_data_array0_bank3_dout ),
-  .WEN                                (ifu_icache_data_array0_bank3_bwen )
+//  `ifdef MEM_CFG_IN
+//  .mem_cfg_in                         (mem_cfg_in                        ),
+//  `endif //MEM_CFG_IN
+//  .A                                  (ifu_icache_index[WIDTH:3]         ),
+//  .CEN                                (ifu_icache_data_array0_bank3_cen_b),
+//  .CLK                                (data_clk_bank3                    ),
+//  .D                                  (ifu_icache_data_array0_bank3_din  ),
+//  .GWEN                               (ifu_icache_data_array0_wen_b      ),
+//  .Q                                  (icache_ifu_data_array0_bank3_dout ),
+//  .WEN                                (ifu_icache_data_array0_bank3_bwen )
 //);
 //`else //L1_CACHE_ECC
 //endregion ECC_SRAM
@@ -274,7 +274,7 @@ ct_spsram_1024x32  x_ct_spsram_1024x32_bank0 (
   .D                                  (ifu_icache_data_array0_bank0_din  ),//data in
   .GWEN                               (ifu_icache_data_array0_wen_b      ),//write enable
   .Q                                  (icache_ifu_data_array0_bank0_dout ),//data out
-  .WEN                                (ifu_icache_data_array0_bank0_bwen )//byte strobe
+  .WEN                                (ifu_icache_data_array0_bank0_bwen ) //byte strobe
 );
 //`ifdef ICACHE_256K
 //ct_spsram_8192x32  x_ct_spsram_8192x32_bank1 (
