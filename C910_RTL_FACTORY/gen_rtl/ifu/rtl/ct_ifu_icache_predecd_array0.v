@@ -71,46 +71,46 @@ assign predecd_local_en = ifu_icache_predecd_array0_clk_en;
 assign ifu_icache_predecd_array0_bwen[31:0] = {32{ifu_icache_predecd_array0_wen_b}};
 
 //csky vperl_off
-`ifdef ICACHE_256K
-parameter WIDTH = 15;
-`endif
-`ifdef ICACHE_128K
-parameter WIDTH = 14;
-`endif
-`ifdef ICACHE_64K
-parameter WIDTH = 13;
-`endif
+//`ifdef ICACHE_256K
+//parameter WIDTH = 15;
+//`endif
+//`ifdef ICACHE_128K
+//parameter WIDTH = 14;
+//`endif
+//`ifdef ICACHE_64K
+//parameter WIDTH = 13;
+//`endif
 `ifdef ICACHE_32K
 parameter WIDTH = 12;
 `endif
 
-`ifdef L1_CACHE_ECC
-`ifdef ICACHE_64K
-ct_spsram_2048x33  x_ct_spsram_2048x33 (
-`else  //ICACHE_64K
-ct_spsram_1024x33  x_ct_spsram_1024x33 (
-`endif //ICACHE_64K  
-  `ifdef MEM_CFG_IN
-  .mem_cfg_in                      (mem_cfg_in                     ),
-  `endif //MEM_CFG_IN
-  .A                               (ifu_icache_index[WIDTH:3]      ),
-  .CEN                             (ifu_icache_predecd_array0_cen_b),
-  .CLK                             (predecd_clk                    ),
-  .D                               (ifu_icache_predecd_array0_din  ),
-  .GWEN                            (ifu_icache_data_array0_wen_b   ),
-  .Q                               (icache_ifu_predecd_array0_dout ),
-  .WEN                             (ifu_icache_predecd_array0_bwen )
-);
-`else //L1_CACHE_ECC
-`ifdef ICACHE_256K
-ct_spsram_8192x32  x_ct_spsram_8192x32 (
-`endif
-`ifdef ICACHE_128K
-ct_spsram_4096x32  x_ct_spsram_4096x32 (
-`endif
-`ifdef ICACHE_64K
-ct_spsram_2048x32_split  x_ct_spsram_2048x32_split (
-`endif
+//`ifdef L1_CACHE_ECC
+//`ifdef ICACHE_64K
+//ct_spsram_2048x33  x_ct_spsram_2048x33 (
+//`else  //ICACHE_64K
+//ct_spsram_1024x33  x_ct_spsram_1024x33 (
+//`endif //ICACHE_64K  
+//  `ifdef MEM_CFG_IN
+//  .mem_cfg_in                      (mem_cfg_in                     ),
+//  `endif //MEM_CFG_IN
+//  .A                               (ifu_icache_index[WIDTH:3]      ),
+//  .CEN                             (ifu_icache_predecd_array0_cen_b),
+//  .CLK                             (predecd_clk                    ),
+//  .D                               (ifu_icache_predecd_array0_din  ),
+//  .GWEN                            (ifu_icache_data_array0_wen_b   ),
+//  .Q                               (icache_ifu_predecd_array0_dout ),
+//  .WEN                             (ifu_icache_predecd_array0_bwen )
+//);
+//`else //L1_CACHE_ECC
+//`ifdef ICACHE_256K
+//ct_spsram_8192x32  x_ct_spsram_8192x32 (
+//`endif
+//`ifdef ICACHE_128K
+//ct_spsram_4096x32  x_ct_spsram_4096x32 (
+//`endif
+//`ifdef ICACHE_64K
+//ct_spsram_2048x32_split  x_ct_spsram_2048x32_split (
+//`endif
 `ifdef ICACHE_32K
 ct_spsram_1024x32  x_ct_spsram_1024x32 (
 `endif //ICACHE_64K  

@@ -83,53 +83,53 @@ assign ifu_icache_tag_bwen[58:0] = {
 
 //Icache Size define
 //csky vperl_off
-`ifdef ICACHE_256K
-parameter WIDTH = 15;
-`endif
-`ifdef ICACHE_128K
-parameter WIDTH = 14;
-`endif
-`ifdef ICACHE_64K
-parameter WIDTH = 13;
-`endif
+//`ifdef ICACHE_256K
+//parameter WIDTH = 15;
+//`endif
+//`ifdef ICACHE_128K
+//parameter WIDTH = 14;
+//`endif
+//`ifdef ICACHE_64K
+//parameter WIDTH = 13;
+//`endif
 `ifdef ICACHE_32K
 parameter WIDTH = 12;
 `endif
 
-`ifdef L1_CACHE_ECC
-`ifdef ICACHE_64K
-ct_spsram_512x61  x_ct_spsram_512x61 (
-`else
-ct_spsram_256x61  x_ct_spsram_256x61 (
-`endif
-  `ifdef MEM_CFG_IN
-  .mem_cfg_in             (mem_cfg_in               ),
-  `endif //MEM_CFG_IN
-  .A                      (ifu_icache_index[WIDTH:5]),
-  .CEN                    (ifu_icache_tag_cen_b     ),
-  .CLK                    (tag_clk                  ),
-  .D                      (ifu_icache_tag_din       ),
-  .GWEN                   (ifu_icache_tag_gwen      ),
-  .Q                      (icache_ifu_tag_dout      ),
-  .WEN                    (ifu_icache_tag_bwen      )
-);
-`else //L1_CACHE_ECC
-`ifdef ICACHE_256K
-ct_spsram_2048x59  x_ct_spsram_2048x59 (
-`endif
-`ifdef ICACHE_128K
-ct_spsram_1024x59  x_ct_spsram_1024x59 (
-`endif
-`ifdef ICACHE_64K
-ct_spsram_512x59  x_ct_spsram_512x59 (
-`endif
+//`ifdef L1_CACHE_ECC
+//`ifdef ICACHE_64K
+//ct_spsram_512x61  x_ct_spsram_512x61 (
+//`else
+//ct_spsram_256x61  x_ct_spsram_256x61 (
+//`endif
+//  `ifdef MEM_CFG_IN
+//  .mem_cfg_in             (mem_cfg_in               ),
+//  `endif //MEM_CFG_IN
+//  .A                      (ifu_icache_index[WIDTH:5]),
+//  .CEN                    (ifu_icache_tag_cen_b     ),
+//  .CLK                    (tag_clk                  ),
+//  .D                      (ifu_icache_tag_din       ),
+//  .GWEN                   (ifu_icache_tag_gwen      ),
+//  .Q                      (icache_ifu_tag_dout      ),
+//  .WEN                    (ifu_icache_tag_bwen      )
+//);
+//`else //L1_CACHE_ECC
+//`ifdef ICACHE_256K
+//ct_spsram_2048x59  x_ct_spsram_2048x59 (
+//`endif
+//`ifdef ICACHE_128K
+//ct_spsram_1024x59  x_ct_spsram_1024x59 (
+//`endif
+//`ifdef ICACHE_64K
+//ct_spsram_512x59  x_ct_spsram_512x59 (
+//`endif
 `ifdef ICACHE_32K
 ct_spsram_256x59  x_ct_spsram_256x59 (
 `endif
-  `ifdef MEM_CFG_IN
-  .mem_cfg_in             (mem_cfg_in               ),
-  `endif //MEM_CFG_IN
-  .A                      (ifu_icache_index[WIDTH:5]),
+//  `ifdef MEM_CFG_IN
+//  .mem_cfg_in             (mem_cfg_in               ),
+//  `endif //MEM_CFG_IN
+  .A                      (ifu_icache_index[WIDTH:5]),//ADDR=index=[12:5]=8bits=256sets
   .CEN                    (ifu_icache_tag_cen_b     ),
   .CLK                    (tag_clk                  ),
   .D                      (ifu_icache_tag_din       ),
