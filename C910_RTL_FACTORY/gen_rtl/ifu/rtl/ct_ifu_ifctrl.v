@@ -503,9 +503,11 @@ assign ifu_had_no_op = ifu_yy_xx_no_op;
 //  2.Refill     on : Data from Refill, Data Valid only when trans_cmplt && PC_hit
 //  Refill on Valid When Enter Refill SM && NOT ask Change Flow,Which Means
 //  WFD1-WFD4 or REQ 
-assign if_inst_data_vld = (!l1_refill_ifctrl_refill_on && 
-                           !(pcgen_ifctrl_way_pred[1:0] == 2'b0) ) || //not way_pred stall
-                          (l1_refill_ifctrl_refill_on && 
+                           //第一种情况：取icache数据的时候，没有miss也没有way prediction错误
+assign if_inst_data_vld = (!l1_refill_ifctrl_refill_on && // refill： icache miss导致要从L2取数据
+                           !(pcgen_ifctrl_way_pred[1:0] == 2'b0) ) || //not way_pred stall //如果way prediction错误，会导致要去另外一个way取数据，从而带来stall
+                           //第二种情况：取icache数据的时候，miss了，但是refill完成了，并且要的数据正好是refill的数据
+                          (l1_refill_ifctrl_refill_on &&  //这里应该是说，发送refill,并且refill完成了，并且要的数据正好是refill的数据
                            l1_refill_ifctrl_trans_cmplt && 
                            refill_pc_hit);
 assign refill_pc_hit = (pcgen_ifctrl_pc[PC_WIDTH-2:3] == l1_refill_ifctrl_pc[PC_WIDTH-2:3]);
@@ -517,8 +519,9 @@ assign refill_pc_hit = (pcgen_ifctrl_pc[PC_WIDTH-2:3] == l1_refill_ifctrl_pc[PC_
 //  1.MMU Trans success
 //  2.MMU Trans expt
 //  3.!ifu_no_op_req(in case of invalid inst fetch affect no_op)
-assign if_pc_vld       = mmu_ifu_pavld && 
-                         !ifu_no_op_req;
+assign if_pc_vld       = mmu_ifu_pavld && //mmu成功把va转换成pa
+                         !ifu_no_op_req; //cpu不处于休眠状态
+                         //问题：要pa干什么，读icache应该是用va，难道这里是表示用pa来fetch L2？
 
 //==========================================================
 //             IF Stage Cancel Signal
