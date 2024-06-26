@@ -384,25 +384,7 @@ parameter PC_WIDTH = 40;
 //  PC from IFU IF Stage Reissue
 //  PC Increase
 // &CombBeg; @43
-always @( ipctrl_pcgen_chgflw_pcload
-       or ifctrl_pcgen_chgflw_no_stall_mask
-       or ipctrl_pcgen_chgflw_pc[38:0]
-       or if_pc[38:0]
-       or rtu_ifu_chgflw_vld
-       or ibctrl_pcgen_pcload
-       or vector_pcgen_pc[38:0]
-       or had_ifu_pc[38:0]
-       or vector_pcgen_pcload
-       or addrgen_pcgen_pc[38:0]
-       or ifctrl_pcgen_pcload_pc[38:0]
-       or addrgen_pcgen_pcload
-       or ipctrl_pcgen_reissue_pc[38:0]
-       or iu_ifu_chgflw_pc[38:0]
-       or rtu_ifu_chgflw_pc[38:0]
-       or had_ifu_pcload
-       or ibctrl_pcgen_pc[38:0]
-       or iu_ifu_chgflw_vld
-       or ipctrl_pcgen_reissue_pcload)
+always @*
 begin
 if(had_ifu_pcload)
   ifpc_chgflw_pre[PC_WIDTH-2:0] = had_ifu_pc[PC_WIDTH-2:0];
