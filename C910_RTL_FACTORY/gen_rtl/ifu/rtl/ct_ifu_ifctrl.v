@@ -542,18 +542,19 @@ assign ifctrl_ifdp_cancel = if_cancel;
 //  6.Vector_SM on
 //  7.Way Predict = 2'b00, Which Means
 //  8.Rtu_yy_xx_dbgon
-assign if_self_stall = (l1_refill_ifctrl_refill_on && 
-                        !(l1_refill_ifctrl_trans_cmplt && refill_pc_hit)) ||
-                       !if_pc_vld ||
-                       icache_inv_on ||
-                       bht_inv_on ||
-                       btb_inv_on || 
-                       ind_btb_inv_on || 
-                       vector_ifctrl_sm_on ||
-                       pcgen_ifctrl_way_pred_stall || 
-                       rtu_ifu_xx_dbgon;
-assign if_stage_stall      = if_self_stall || ipctrl_ifctrl_stall;
-assign ifctrl_pcgen_stall  = if_stage_stall;
+assign if_self_stall = (l1_refill_ifctrl_refill_on && //1. refill正在进行,要stall
+                        !(l1_refill_ifctrl_trans_cmplt && refill_pc_hit)) || //1.非（refill完成且pc正好是refill的pc），要stall
+                       !if_pc_vld ||//mmu(tlb)在重填
+                       icache_inv_on ||//icache正在被invalidate
+                       bht_inv_on || //bht正在被invalidate
+                       btb_inv_on || //btb正在被invalidate
+                       ind_btb_inv_on || //ind_btb正在被invalidate 
+                       vector_ifctrl_sm_on || //vector操作正在运行
+                       pcgen_ifctrl_way_pred_stall || //way prediction错误
+                       rtu_ifu_xx_dbgon; //rtu正在debug
+      //if_stage_stall 真正的stall信号
+assign if_stage_stall      = if_self_stall || ipctrl_ifctrl_stall; //ipctrl来要求的stall,以后看
+assign ifctrl_pcgen_stall  = if_stage_stall; //把icache stall这个信号传递给其他人：pcgen, bht, ifdp, l0_btb
 assign ifctrl_bht_stall    = if_stage_stall;
 assign ifctrl_ifdp_stall   = if_stage_stall;
 assign ifctrl_l0_btb_stall = if_stage_stall;
@@ -563,15 +564,16 @@ assign ifctrl_pcgen_stall_short = if_self_stall || ipctrl_ifctrl_stall_short;
 //==========================================================
 //             IF Stage Valid Signal
 //==========================================================
-//IF Stage Valid when
+//IF Stage Valid when 
 //  1.if_inst_data_vld &&
 //  2.if_pc_vld &&
 //  3.!if_cancel &&
 //  4.!if_self_stall
-assign if_vld = if_inst_data_vld &&
-                if_pc_vld &&
-                !if_cancel &&
-                !if_self_stall;
+//if_vld用来表示icache里抓的指令是否有效
+assign if_vld = if_inst_data_vld && //data有效
+                if_pc_vld && //pc有效
+                !if_cancel && //不是cancel
+                !if_self_stall; //不是stall
 
 assign if_vld_for_gateclk = if_inst_data_vld &&
                             !if_cancel &&
@@ -623,10 +625,10 @@ end
 //  1.!ip_if_Stall
 //  2.if_vld
 //  3.!pcgen_ifctrl_pipe_cancel(Only affect valid)
-assign ifctrl_ifdp_pipedown = !ipctrl_ifctrl_stall &&
-                              if_vld;
+assign ifctrl_ifdp_pipedown = !ipctrl_ifctrl_stall && //ipctrl没有要求stall
+                              if_vld;  //上面的if_vld，表示icache里取的指令有效
 // &Force("output","ifctrl_ifdp_pipedown");                             @185
-assign ifctrl_bht_pipedown = !ipctrl_ifctrl_bht_stall;
+assign ifctrl_bht_pipedown = !ipctrl_ifctrl_bht_stall; //ipctrl没有要求bht stall
 
 //==========================================================
 //             Valid Signal to IP Stage
@@ -654,6 +656,7 @@ assign if_vld_clk_en = if_vld_for_gateclk ||
                        ifctrl_ipctrl_vld; 
 //ipctrl_ifctrl_stall may set with higher priority cancel at 
 //the same time
+//把if_vld打了一拍，传递给ipctrl
 always @(posedge if_vld_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
@@ -674,13 +677,14 @@ end
 //  2.Cache INV Done
 //  3.High priority change flow from Had/Vector and so on
 //  Note That The Three Done Signal should Flop One Cycle
-assign icache_reissue = l1_refill_ifctrl_reissue ||
-                        (icache_inv_done || icache_read_done) && 
+//用来指示需要重新取icache的情况，具体还不清楚
+assign icache_reissue = l1_refill_ifctrl_reissue || //refill.v要求重新取icache
+                        (icache_inv_done || icache_read_done) && //icache invalidate或者读完了
                         (
                           !l1_refill_ifctrl_ctc || 
-                          l1_refill_inv_wfd_back
+                          l1_refill_inv_wfd_back 
                         ) || 
-                        pcgen_ifctrl_reissue;
+                        pcgen_ifctrl_reissue; //pcgen要求重新取icache
 //Gate Clk
 // &Instance("gated_clk_cell","x_ifctrl_reissue_clk"); @232
 gated_clk_cell  x_ifctrl_reissue_clk (
@@ -706,30 +710,22 @@ begin
   if(!cpurst_b)
     ifctrl_pcgen_reissue_pcload <= 1'b0;
   else
-    ifctrl_pcgen_reissue_pcload <= icache_reissue;
+    ifctrl_pcgen_reissue_pcload <= icache_reissue; //告诉pcgen需要重新取icache
 end
 // &Force("output","ifctrl_pcgen_reissue_pcload"); @248
 
 //==========================================================
 //             IF Stage PCload
 //==========================================================
-assign ifctrl_pcload                = l0_btb_ifctrl_chglfw_vld 
+assign ifctrl_pcload                = l0_btb_ifctrl_chglfw_vld //l0_btb告诉ifctrl要改变pc
                                    && !ipctrl_ifctrl_stall
                                    && !ifctrl_pcgen_reissue_pcload
-                                   && if_inst_data_vld
+                                   && if_inst_data_vld //刚刚取的指令有效
 //                                   && if_pc_vld
                                    && !if_self_stall;
-                                   
-assign ifctrl_pcgen_chgflw_no_stall_mask = l0_btb_ifctrl_chglfw_vld
-                                        && !ifctrl_pcgen_reissue_pcload
-                                        && if_inst_data_vld;
-                                         
-assign ifctrl_pcgen_chgflw_vld              = ifctrl_pcload;
-assign ifctrl_pcgen_pcload_pc[PC_WIDTH-2:0] = l0_btb_ifctrl_chgflw_pc[PC_WIDTH-2:0];
-assign ifctrl_pcgen_way_pred[1:0]           = (l0_btb_ifctrl_chglfw_vld)
-                                              ? l0_btb_ifctrl_chgflw_way_pred[1:0]
-                                              : 2'b11;
-
+assign ifctrl_pcgen_chgflw_vld              = ifctrl_pcload;        
+assign ifctrl_pcgen_pcload_pc[PC_WIDTH-2:0] = l0_btb_ifctrl_chgflw_pc[PC_WIDTH-2:0]; //l0_btb告诉pcgen要改变的pc              
+//似乎是要把l0_btb要改pc的信息传递给pcgen
 always @(posedge if_vld_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
@@ -742,6 +738,16 @@ begin
     ifctrl_ipctrl_if_pcload <= ifctrl_ipctrl_if_pcload;
 end
 // &Force("output", "ifctrl_ipctrl_if_pcload"); @282
+
+assign ifctrl_pcgen_chgflw_no_stall_mask = l0_btb_ifctrl_chglfw_vld //好像多余？
+                                        && !ifctrl_pcgen_reissue_pcload
+                                        && if_inst_data_vld;             
+
+
+assign ifctrl_pcgen_way_pred[1:0]           = (l0_btb_ifctrl_chglfw_vld)
+                                              ? l0_btb_ifctrl_chgflw_way_pred[1:0]
+                                              : 2'b11;
+
 
 
 //==========================================================
@@ -1131,6 +1137,7 @@ assign ifctrl_pcgen_ins_icache_inv_done = icache_line_inv_done ||
 //==========================================================
 //            Interface with Icache Interface
 //==========================================================
+//输出给icache的关键控制信号
 assign ifctrl_icache_if_tag_req              = icache_inv_tag_req;
 assign ifctrl_icache_if_reset_req            = icache_reset_inv_req;
 assign ifctrl_icache_if_inv_on               = (icache_inv_cur_state[3:0] != IDLE);
