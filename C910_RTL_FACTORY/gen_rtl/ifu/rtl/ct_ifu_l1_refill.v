@@ -426,9 +426,9 @@ endcase
 end
 
 //------------------Conditional Signal----------------------
-assign refill_start         = ipctrl_l1_refill_miss_req && 
+assign refill_start         = ipctrl_l1_refill_miss_req && //出现miss,且目前还没有refill
                               !ifctrl_l1_refill_inv_on;
-assign refill_start_for_gateclk = ipctrl_l1_refill_req_for_gateclk &&
+assign refill_start_for_gateclk = ipctrl_l1_refill_req_for_gateclk && 
                                   !ifctrl_l1_refill_inv_on;
 
 assign change_flow          = pcgen_l1_refill_chgflw;
@@ -489,6 +489,7 @@ assign byte1[7:0]  = ipb_l1_refill_rdata[ 15:  8];
 assign byte0[7:0]  = ipb_l1_refill_rdata[  7:  0]; 
 
 //refill tag data
+//为什么是pc+8： 64位cpu？一个指令64bit？ 但我看到的是32位/16位的指令
 assign l1_refill_icache_if_ptag[27:0] = physical_pc[PC_WIDTH-2:11];
 
 always @(posedge l1_refill_clk or negedge cpurst_b)
@@ -524,6 +525,7 @@ end
 //index_inc_vld
 //if ipb_refill_data_vld && tsize
 //when index_inc_vld , pc[ 4:3] + 1
+//在WFD1,WFD2,WFD3状态下，让pc+8
 assign index_inc_vld = (
                          (refill_cur_state[3:0] == WFD1) && 
                          !icache_inv_busy && 
