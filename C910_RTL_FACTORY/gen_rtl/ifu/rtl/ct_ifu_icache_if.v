@@ -399,7 +399,7 @@ assign ifu_icache_data_array1_wen_b = !(l1_refill_icache_if_wr && fifo_bit) && !
 //==========================================================
 //            Write Data to Icache Data Array
 //==========================================================
-assign ifu_icache_data_array0_din[127:0] = (icache_reset_inv) ? 128'b0 : l1_refill_icache_if_inst_data[127:0];
+assign ifu_icache_data_array0_din[127:0] = (icache_reset_inv) ? 128'b0 : l1_refill_icache_if_inst_data[127:0]; // invalidate时写0, 居然是写0而不是仅仅invalid valid bit
 assign ifu_icache_data_array1_din[127:0] = (icache_reset_inv) ? 128'b0 : l1_refill_icache_if_inst_data[127:0];
 
 //==========================================================
@@ -598,7 +598,7 @@ ct_ifu_icache_data_array0  x_ct_ifu_icache_data_array0 (
   .ifu_icache_data_array0_bank3_clk_en (ifu_icache_data_array0_bank3_clk_en),
   .ifu_icache_data_array0_din          (ifu_icache_data_array0_din         ),//data input
   .ifu_icache_data_array0_wen_b        (ifu_icache_data_array0_wen_b       ),//write enable
-  .ifu_icache_index                    (ifu_icache_index                   ),//index [12:5]
+  .ifu_icache_index                    (ifu_icache_index                   ),//有效的位index [12:3]
   .pad_yy_icg_scan_en                  (pad_yy_icg_scan_en                 )
 );
 
