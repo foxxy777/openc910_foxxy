@@ -173,12 +173,12 @@ assign ifu_icache_data_array0_bank3_din[31:0] = ifu_icache_data_array0_din[ 31: 
 //`ifdef ICACHE_128K
 //parameter WIDTH = 14;
 //`endif
-//`ifdef ICACHE_64K
-//parameter WIDTH = 13;
-//`endif
-`ifdef ICACHE_32K
-parameter WIDTH = 12;
+`ifdef ICACHE_64K
+parameter WIDTH = 13;
 `endif
+//`ifdef ICACHE_32K
+//parameter WIDTH = 12;
+//`endif
 
 //region ECC_SRAM 
 //`ifdef L1_CACHE_ECC
@@ -260,15 +260,15 @@ parameter WIDTH = 12;
 //ct_spsram_4096x32  x_ct_spsram_4096x32_bank0 (
 //`endif
 //`ifdef ICACHE_64K
-//ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank0 (
-//`endif
-`ifdef ICACHE_32K
-ct_spsram_1024x32  x_ct_spsram_1024x32_bank0 (
+ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank0 (
+`endif
+//`ifdef ICACHE_32K
+//ct_spsram_1024x32  x_ct_spsram_1024x32_bank0 (
 `endif
 //  `ifdef MEM_CFG_IN
 //  .mem_cfg_in                         (mem_cfg_in                        ),//mem cfg
 //  `endif //MEM_CFG_IN
-  .A                                  (ifu_icache_index[WIDTH:3]         ),//ADDR = INDEX [12:3]=10bit=1024 entry
+  .A                                  (ifu_icache_index[WIDTH:3]         ),// ADDR = INDEX [13:3]=11bit=2048 entry
   .CEN                                (ifu_icache_data_array0_bank0_cen_b),// chip enable
   .CLK                                (data_clk_bank0                    ),
   .D                                  (ifu_icache_data_array0_bank0_din  ),//data in
@@ -282,11 +282,11 @@ ct_spsram_1024x32  x_ct_spsram_1024x32_bank0 (
 //`ifdef ICACHE_128K
 //ct_spsram_4096x32  x_ct_spsram_4096x32_bank1 (
 //`endif
-//`ifdef ICACHE_64K
-//ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank1 (
+`ifdef ICACHE_64K
+ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank1 (
 //`endif
-`ifdef ICACHE_32K
-ct_spsram_1024x32  x_ct_spsram_1024x32_bank1 (
+//`ifdef ICACHE_32K
+//ct_spsram_1024x32  x_ct_spsram_1024x32_bank1 (
 `endif
 //  `ifdef MEM_CFG_IN
 //  .mem_cfg_in                         (mem_cfg_in                        ),
@@ -307,10 +307,10 @@ ct_spsram_1024x32  x_ct_spsram_1024x32_bank1 (
 //ct_spsram_4096x32  x_ct_spsram_4096x32_bank2 (
 //`endif
 //`ifdef ICACHE_64K
-//ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank2 (
-//`endif
-`ifdef ICACHE_32K
-ct_spsram_1024x32  x_ct_spsram_1024x32_bank2 (
+ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank2 (
+`endif
+//`ifdef ICACHE_32K
+//ct_spsram_1024x32  x_ct_spsram_1024x32_bank2 (
 `endif
 //  `ifdef MEM_CFG_IN
 //  .mem_cfg_in                         (mem_cfg_in                        ),
@@ -330,10 +330,10 @@ ct_spsram_1024x32  x_ct_spsram_1024x32_bank2 (
 //ct_spsram_4096x32  x_ct_spsram_4096x32_bank3 (
 //`endif
 //`ifdef ICACHE_64K
-//ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank3 (
-//`endif
-`ifdef ICACHE_32K
-ct_spsram_1024x32  x_ct_spsram_1024x32_bank3 (
+ct_spsram_2048x32_split  x_ct_spsram_2048x32_bank3 (
+`endif
+//`ifdef ICACHE_32K
+//ct_spsram_1024x32  x_ct_spsram_1024x32_bank3 (
 `endif
 //  `ifdef MEM_CFG_IN
 //  .mem_cfg_in                         (mem_cfg_in                        ),

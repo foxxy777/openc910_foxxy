@@ -829,13 +829,16 @@ begin
 case(icache_inv_cur_state[3:0])
 //icache invalid start when refill state machine not on
 IDLE        : if(ins_all_inv_req)
-              icache_inv_next_state[3:0] = INS_INV_ALL;
+              icache_inv_next_state[3:0] = INS_INV_ALL; //无效整个Icache
               else if(ins_addr_inv_req)
-              icache_inv_next_state[3:0] = INS_TAG_REQ;
+              icache_inv_next_state[3:0] = INS_TAG_REQ;// 读TAG请求 
+              //IDLE->INS_TAG_REQ->INS_TAG_RD->INS_CMP->IDLE //这一路是正常读了一个tag
+              //IDLE->INS_TAG_REQ->INS_TAG_RD->INS_CMP->INS_INV->IDLE //这是读了一个tag，发现要invalidate
+
               else if(all_inv_req)
-              icache_inv_next_state[3:0] = INV_ALL;
-              else if(icache_read_req)
-              icache_inv_next_state[3:0] = READ_REQ;
+              icache_inv_next_state[3:0] = INV_ALL;//也是无效整个Icache？
+              else if(icache_read_req)//读data和tag
+              icache_inv_next_state[3:0] = READ_REQ;// IDLE->READ_REQ->READ_RD->READ_ST->IDLE这条路是正常的读
               else
               icache_inv_next_state[3:0] = IDLE;
 INV_ALL     : if(icache_all_inv_done)
@@ -848,7 +851,7 @@ INV_ALL     : if(icache_all_inv_done)
 INS_TAG_REQ : icache_inv_next_state[3:0] = INS_TAG_RD;
 INS_TAG_RD  : icache_inv_next_state[3:0] = INS_CMP;
 INS_CMP     : if(ins_icache_inv_line_hit)
-              icache_inv_next_state[3:0] = INS_INV;
+              icache_inv_next_state[3:0] = INS_INV; //无效一个cache line
               else if(!(addr_inv_count_reg[4:0] == 5'b00000))
               icache_inv_next_state[3:0] = INS_TAG_REQ;
               else
