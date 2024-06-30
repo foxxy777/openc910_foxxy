@@ -73,38 +73,45 @@ module ct_ifu_ipb(
 );
 
 // &Ports; @23
-input   [127:0]  biu_ifu_rd_data;              
+//BIU 总线的内容
+input   [127:0]  biu_ifu_rd_data;           
 input            biu_ifu_rd_data_vld;          
 input            biu_ifu_rd_grnt;              
 input            biu_ifu_rd_id;                
 input            biu_ifu_rd_last;              
-input   [1  :0]  biu_ifu_rd_resp;              
+input   [1  :0]  biu_ifu_rd_resp;            
+//CP0 控制寄存器  
 input            cp0_ifu_icache_pref_en;       
 input            cp0_ifu_icg_en;               
 input            cp0_ifu_insde;                
 input            cp0_yy_clk_en;                
 input            cpurst_b;                     
-input            forever_cpuclk;               
+input            forever_cpuclk;
+//tag data               
 input   [28 :0]  icache_if_ipb_tag_data0;      
 input   [28 :0]  icache_if_ipb_tag_data1;      
-input            ifctrl_ipb_inv_on;            
+//icache invalidate is on
+input            ifctrl_ipb_inv_on;        
+//icache目前没有操作    
 input            ifu_no_op_req;                
+//refill 过来的信号
 input            l1_refill_ipb_bufferable;     
 input            l1_refill_ipb_cacheable;      
 input            l1_refill_ipb_ctc_inv;        
 input            l1_refill_ipb_machine_mode;   
 input   [39 :0]  l1_refill_ipb_ppc;            
-input            l1_refill_ipb_pre_cancel;     
-input            l1_refill_ipb_refill_on;      
-input            l1_refill_ipb_req;            
+input            l1_refill_ipb_pre_cancel;     //refill 告诉ipb不用再refill了
+input            l1_refill_ipb_refill_on;      //refill on
+input            l1_refill_ipb_req;            //refill请求
 input            l1_refill_ipb_req_for_gateclk; 
 input            l1_refill_ipb_req_pre;        
 input            l1_refill_ipb_secure;         
 input            l1_refill_ipb_supv_mode;      
-input            l1_refill_ipb_tsize;          
-input   [39 :0]  l1_refill_ipb_vpc;            
+input            l1_refill_ipb_tsize;          //表示cacheable ?
+input   [39 :0]  l1_refill_ipb_vpc;            //refill的地址
 input            pad_yy_icg_scan_en;           
 input            pcgen_ipb_chgflw;             
+//往biu发出去的读请求
 output           ifu_biu_r_ready;              
 output  [39 :0]  ifu_biu_rd_addr;              
 output  [1  :0]  ifu_biu_rd_burst;             
@@ -117,9 +124,11 @@ output           ifu_biu_rd_req;
 output           ifu_biu_rd_req_gate;          
 output  [2  :0]  ifu_biu_rd_size;              
 output  [3  :0]  ifu_biu_rd_snoop;             
-output  [1  :0]  ifu_biu_rd_user;              
+output  [1  :0]  ifu_biu_rd_user;     
+//debug
 output  [3  :0]  ipb_debug_req_cur_st;         
-output  [2  :0]  ipb_debug_wb_cur_st;          
+output  [2  :0]  ipb_debug_wb_cur_st;    
+//ipb发往icache       
 output  [33 :0]  ipb_icache_if_index;          
 output           ipb_icache_if_req;            
 output           ipb_icache_if_req_for_gateclk; 
@@ -135,10 +144,11 @@ reg              icache_inv_record;
 reg     [28 :0]  icache_tag_data0_reg;         
 reg     [28 :0]  icache_tag_data1_reg;         
 reg     [33 :0]  ipb_icache_if_index;          
-reg     [127:0]  pbuf_entry0;                  
+reg     [127:0]  pbuf_entry0;                  //prefetch buffer entry
 reg     [127:0]  pbuf_entry1;                  
 reg     [127:0]  pbuf_entry2;                  
 reg     [127:0]  pbuf_entry3;                  
+//以下是prefetch来的数据的信息
 reg              pref_bufferable;              
 reg              pref_cacheable;               
 reg     [33 :0]  pref_line_addr;               
@@ -280,6 +290,10 @@ wire             req_clk_en;
 wire             req_sm_pref_cmplt;            
 wire             rid_for_grnt;                 
 
+// ipb= instruction prefetch buffer
+//在miss后，要refill miss的cacheline，但refill只会refill miss的cacheline，不会refill miss的cacheline后续的cacheline,但很可能后续是后面还会要用到的，
+//所以ipb在miss refill后，控制把后续的cacheline 取进prefetch buffer里，这样后续的内容miss了，就不用从L2 取数，直接从prefetch buffer里取数
+
 
 parameter PC_WIDTH = 40;
 // &Force("bus","l1_refill_ipb_ppc",39,0); @28
@@ -379,16 +393,16 @@ always @( biu_pref_grnt
        or l1_refill_ipb_req)
 begin
 case(req_cur_st[3:0])
-IDLE    : if(pref_launch_start)
+IDLE    : if(pref_launch_start)// 主要是看pref_launch_vld，更进一步是在看ref_for_pref_on，也就是refill正在进行中
             req_nxt_st[3:0] = CACHE;
           else
             req_nxt_st[3:0] = IDLE;
-CACHE   :   req_nxt_st[3:0] = CMP;
-CMP     : if(ipb_hit)
+CACHE   :   req_nxt_st[3:0] = CMP; //仅仅是等待一个周期
+CMP     : if(ipb_hit)//表示要prefetch的数据已经在icache里了
             req_nxt_st[3:0] = IDLE;
           else
             req_nxt_st[3:0] = PF_REQ;
-PF_REQ  : if(biu_pref_grnt)
+PF_REQ  : if(biu_pref_grnt)//等待biu总线允许了ipb发出去的prefetch读请求
             req_nxt_st[3:0] = PF0;
           else if(l1_refill_ipb_req && !ref_hit_pref)
             req_nxt_st[3:0] = IDLE;
@@ -431,12 +445,12 @@ end
 //pref_launch_vld
 assign pref_launch_vld = biu_ref_grnt && //pref req only occur aftre ref grnt
                          //!pcgen_ipb_chgflw && //in case of hit under miss chgflw next icache read meet pref icache req
-                         pref_idle && //pref sm not on
+                         pref_idle && //pref sm not on  //两个fsm都是idle
                          l1_refill_ipb_tsize && //Cacheable && Cache Enable
-                         cp0_ifu_icache_pref_en && //pref is on
-                         !icache_inv_for_pref && //cache inv not on
-                         ref_for_pref_on && //pref on need refill sm on special condition
-                         ref_addr_within_4k; //over 4K, MMU property not same
+                         cp0_ifu_icache_pref_en && //pref is on //寄存器里打开了prefetch
+                         !icache_inv_for_pref && //cache inv not on  //icache没有在进行invalidate
+                         ref_for_pref_on && //pref on need refill sm on special condition //ref表示refill，表示refill正在进行中
+                         ref_addr_within_4k; //over 4K, MMU property not same //以后看看这个是怎么算的
 
 assign pref_launch_vld_for_gateclk = pref_idle && 
                                      l1_refill_ipb_tsize && 
@@ -470,19 +484,19 @@ assign pref_launch_clk_en = ifu_biu_rd_req && !rid_for_grnt||
 //pref_launch_vld_flop for LSU req timing
 assign pref_launch_vld_flop = ipb_icache_if_req;
 assign pref_launch_start = pref_launch_vld_flop && 
-                           cp0_ifu_icache_pref_en && //pref is on
-                           !icache_inv_for_pref;
+                           cp0_ifu_icache_pref_en && //寄存器控制的允不允许prefetch的开关
+                           !icache_inv_for_pref;  //icache不在invalidate
 assign pref_launch_start_short = icache_if_req
                               && cp0_ifu_icache_pref_en
                               && !icache_inv_for_pref;
 
-assign biu_ref_grnt        = biu_ifu_rd_grnt && !rid_for_grnt;
+assign biu_ref_grnt        = biu_ifu_rd_grnt && !rid_for_grnt; //表示
 assign pref_idle           = (req_cur_st[3:0] == IDLE) && 
                              (wb_cur_st[2:0] == PF_IDLE);
 assign icache_inv_for_pref = ifctrl_ipb_inv_on || icache_inv_record;
 assign ref_for_pref_on     = l1_refill_ipb_refill_on;
 assign ref_addr_within_4k  = l1_refill_ipb_ppc[11:6] != 6'b111111;
-//ipb_hit
+//ipb_hit 表示要prefetch的数据已经在icache里了
 assign ipb_hit = ipb_way0_hit || ipb_way1_hit;
 assign ipb_way0_hit = icache_tag_data0_reg[28] && 
                       (l1_refill_ipb_ppc[39:12] == icache_tag_data0_reg[27:0]);
@@ -525,12 +539,12 @@ assign icache_flop_clk_en = (req_cur_st[3:0] == CACHE);
 // &Force("output","ifu_biu_rd_req"); @227
 //ifu_biu_rd_req
 //refill request can be set when pref not IDLE
-assign ifu_biu_rd_req      = (ref_req_for_biu || pref_req_for_biu) && 
+assign ifu_biu_rd_req      = (ref_req_for_biu || pref_req_for_biu) && //ifu在往biu发出读请求，prefetch和refill都会发出读请求
                              cp0_yy_clk_en;
-assign ref_req_for_biu     = l1_refill_ipb_req && 
+assign ref_req_for_biu     = l1_refill_ipb_req && //ifu为了refill发出的读请求，此时refill要的数据不在prefetch里，把当下icache miss的数据直接回填到icache里
                              (pref_idle || !ref_hit_pref);
-assign pref_req_for_biu    = (req_cur_st[3:0] == PF_REQ);
-assign ref_hit_pref        = (l1_refill_ipb_ppc[39:6] == pref_line_addr[33:0]) && 
+assign pref_req_for_biu    = (req_cur_st[3:0] == PF_REQ);// ifu为了prefetch发出读请求，此时refill要的数据不在prefetch里，icache miss+64BYTE的数据回填到prefetch buffer里
+assign ref_hit_pref        = (l1_refill_ipb_ppc[39:6] == pref_line_addr[33:0]) && //似乎是看正在进行的refill的地址和prefetch的地址是否一样，虽然不知道为什么他们会一样
                              l1_refill_ipb_tsize;
 assign biu_pref_grnt       = biu_ifu_rd_grnt && rid_for_grnt;
 assign ifu_biu_rd_req_gate = req_gate;
@@ -595,6 +609,7 @@ assign req_sm_pref_cmplt = (req_cur_st[3:0] == PF3) && biu_pref_data_vld;
 //==========================================================
 //              The Prefetch Write back SM
 //==========================================================
+//用于控制将prefetch buffer中的数据写回到icache中
 //State Description:
 //PF_IDLE : Wait for prefetch cmplt
 //PF_VLD  : Wait for refill request
@@ -638,6 +653,9 @@ PF_VLD  :  if(icache_inv_for_pref || ifu_no_op_req)
              wb_nxt_st[2:0] = PF_IDLE;
            else
              if(l1_refill_ipb_req && ref_hit_pref && !pcgen_ipb_chgflw)
+             //l1_refill_ipb_req 表示refill来向ipb请求他之前取的数据
+             //ref_hit_pref 表示refill要求的就是prefetch上次取好了正存在entry里的数据
+             //pcgen_ipb_chgflw 表示ifu的下一次请求是不是在miss的时候发生了流水线切换
                wb_nxt_st[2:0] = PF_GRNT; //cmplt pref hit refill
              else if(l1_refill_ipb_req)
                wb_nxt_st[2:0] = PF_IDLE; //cmplt pref not hit refill
@@ -654,26 +672,39 @@ endcase
 end
 
 //---------------------Control Signal-----------------------
+
+
+//parameter PF_IDLE = 3'b000,
+//          PF_VLD  = 3'b001,  
+//          PF_GRNT = 3'b011,
+//          PF_WB0  = 3'b110,  
+//          PF_WB1  = 3'b111,
+//          PF_WB2  = 3'b101,
+//          PF_WB3  = 3'b100;
+
+
 assign pref_hit_vld      = (wb_nxt_st[2:0] == PF_GRNT);
 assign pref_wb_index_inc = (wb_cur_st[2:0] == PF_WB0) || 
                            (wb_cur_st[2:0] == PF_WB1) || 
                            (wb_cur_st[2:0] == PF_WB2);
-assign pref_wb_from_pbuf = wb_cur_st[2]; //PF_WBn State
-assign pref_grnt_ref     = (wb_cur_st[2:0] == PF_GRNT);
+assign pref_wb_from_pbuf = wb_cur_st[2]; //PF_WBn State //就是4个WB状态
+assign pref_grnt_ref     = (wb_cur_st[2:0] == PF_GRNT); //表示refill的数据要从prefetch buffer里取
 
 //==========================================================
 //          Record the Prefetch Information
 //==========================================================
-assign rid_for_grnt = !ref_req_for_biu;
+//在launch prefetch的时候，锁存一些列信息，以便后续使用
+
+assign rid_for_grnt = !ref_req_for_biu;//用来表示ifu发出的读请求的不是为了refill，而是为了prefetch
 
 //buffer nxt line addr of refill when prefetch launch
-assign ref_addr_inc[33:0] = l1_refill_ipb_ppc[39:6] + 26'b1;
+assign ref_addr_inc[33:0] = l1_refill_ipb_ppc[39:6] + 26'b1; //crucial: prefetch的地址是当前地址+64byte
 always @(posedge pref_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
     pref_line_addr[33:0] <= 34'b0;
   else if(pref_launch_vld)
-    pref_line_addr[33:0] <= ref_addr_inc[33:0];
+    pref_line_addr[33:0] <= ref_addr_inc[33:0];//每次launch的时候，锁存当前prefetch的地址
   else
     pref_line_addr[33:0] <= pref_line_addr[33:0];
 end
@@ -684,7 +715,7 @@ always @(posedge pref_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
     pref_line_offset[1:0] <= 2'b0;
-  else if(pref_hit_vld)
+  else if(pref_hit_vld)// pref_line_offset就是l1_refill_ipb_ppc中4个chunk的位置，每个chunk是16byte
     pref_line_offset[1:0] <= l1_refill_ipb_ppc[5:4];
   else if(pref_wb_index_inc)
     pref_line_offset[1:0] <= pref_line_offset[1:0] + 2'b1;
@@ -768,8 +799,9 @@ assign ipb_rd_domain[1:0] = (!ipb_cacheable)  ? 2'b11
 
 assign ipb_rd_snoop[3:0]  = (ipb_share_refill)? 4'b1
                                               : 4'b0;
-
+//下面都是ifu给biu发出的读请求的信息
 //araddr : 128 bus addr, low 4 bits set to 4'b0
+//记录ifu发出的读请求的地址，要么是refill的地址，要么是prefetch的地址
 assign ifu_biu_rd_addr[39:0] = ref_req_for_biu ? {l1_refill_ipb_ppc[39:4], 4'b0} 
                                                : {pref_line_addr[33:0], 6'b0};
 
@@ -801,8 +833,8 @@ assign ipb_l1_refill_grnt         = pref_grnt_ref || biu_ref_grnt;
 //data_vld
 assign ipb_l1_refill_data_vld     = pref_wb_from_pbuf || biu_ref_data_vld;
 //inst data
-assign ipb_l1_refill_rdata[127:0] = pref_wb_from_pbuf ? pbuf_wb_rdata[127:0]
-                                                      : biu_ifu_rd_data[127:0];
+assign ipb_l1_refill_rdata[127:0] = pref_wb_from_pbuf ? pbuf_wb_rdata[127:0] //prefetch buffer中的数据
+                                                      : biu_ifu_rd_data[127:0]; //biu中的数据,所以说biu的数据是从prefetch buffer中穿了一下
 //acc err
 assign ipb_l1_refill_trans_err    = biu_ref_trans_err;
 
