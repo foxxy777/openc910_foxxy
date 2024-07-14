@@ -220,6 +220,14 @@ wire            tag_vld_din;
 
 // &Force("bus","addrgen_btb_tag",9,0); @27
 parameter PC_WIDTH = 40;
+
+
+
+
+
+
+
+//( 1 )BTB TAG ARRAY CE 和 读使能
 //==========================================================
 //                    BTB Tag Array
 //==========================================================
@@ -242,6 +250,8 @@ parameter PC_WIDTH = 40;
 //         use this cycle update refill buffer to btb
 //  b.Sequence Read && !pc_stall && cp0_btb_en
 //INV > Write enable > Read enable
+
+//这个read条件回头要在ipctrl里好好翻一下
 assign btb_tag_cen_b = !btb_inv_on_reg && 
                        !(cp0_ifu_btb_en && refill_buf_updt_vld) && 
                        !btb_tag_rd; 
@@ -265,9 +275,34 @@ assign btb_tag_clk_en = btb_inv_on_reg ||
                           !pcgen_btb_stall_short || 
                           ibdp_btb_miss 
                         );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//BTB tag array 写使能
 //==========================================================
 //             Write Enable to BTB Tag array
 //==========================================================
+//4bit onehot refill_buf_wen根据refill buffer中存的[2:1]来判断写哪个bank (一共俩模块，4bank)
+assign refill_buf_wen[3:0] = {~(refill_buf_tag[2:1]== 2'b11),
+                              ~(refill_buf_tag[2:1]== 2'b10),
+                              ~(refill_buf_tag[2:1]== 2'b01),
+                              ~(refill_buf_tag[2:1]== 2'b00)};
+
+
+
 //1.BTB is on INV
 //  wen[1:0] = 2'b00, 2 way write
 //2.BTB update by refill buffer
@@ -288,12 +323,7 @@ else
 // &CombEnd; @89
 end
 
-assign refill_buf_wen[3:0] = {~(refill_buf_tag[2:1]== 2'b11),
-                              ~(refill_buf_tag[2:1]== 2'b10),
-                              ~(refill_buf_tag[2:1]== 2'b01),
-                              ~(refill_buf_tag[2:1]== 2'b00)};
-
-
+//BTB tag array 写入内容
 //==========================================================
 //             Write Data to BTB Tag array
 //==========================================================
@@ -301,8 +331,10 @@ assign refill_buf_wen[3:0] = {~(refill_buf_tag[2:1]== 2'b11),
 //  valid = 0; tag = 0;
 //2.BTB update by refill buffer
 //  valid = 1; tag = refill_buffer_tag
+//valid bit 1bit
 assign tag_vld_din = refill_buf_updt_vld ? 1'b1 : 1'b0;
 //BTB_1024 tag should be the value of right shifting one bit of BTB_2048
+//tag data bit 10bit
 assign btb_tag_din[21:0] = {tag_vld_din, refill_buf_tag[9:0],
                             tag_vld_din, refill_buf_tag[9:0]};
 //==========================================================
@@ -312,6 +344,18 @@ assign btb_tag_din[21:0] = {tag_vld_din, refill_buf_tag[9:0],
 //| way1[1:0] | Tar1[19:0] | way0[1:0] | Tar0[19:0] |
 //|-----------|------------|-----------|------------|
 
+
+
+
+
+
+
+
+
+
+
+
+// ( 2 )BTB Data array chip enable 和 读使能
 //==========================================================
 //             Chip Enable to BTB Data array
 //==========================================================
@@ -321,13 +365,14 @@ assign btb_tag_din[21:0] = {tag_vld_din, refill_buf_tag[9:0],
 //2.read enable
 //  a.Change flow except ip_way_pred_reissue && cp0_btb_en
 //  b.Sequence Read && !pc_stall && cp0_btb_en
+//btb_data_cen_b 是0有效
 assign btb_data_cen_b = !(cp0_ifu_btb_en && refill_buf_updt_vld) && 
                         !btb_data_rd;
                           
 assign btb_data_rd    = cp0_ifu_btb_en && 
                         (
-                          (pcgen_btb_chgflw && 
-                           !ipctrl_btb_way_pred_error && 
+                          (pcgen_btb_chgflw && //表示正常pcgen更新pc，此时相当于取新值，就正常读btb
+                           !ipctrl_btb_way_pred_error && //btb miss或者way_pred_error时要写入新值，所以不读
                            !ibdp_btb_miss) ||              
                           (!pcgen_btb_chgflw && 
                            !pcgen_btb_stall)
@@ -340,6 +385,8 @@ assign btb_data_clk_en = cp0_ifu_btb_en &&
                           pcgen_btb_chgflw_short || 
                           !pcgen_btb_stall_short
                          );
+
+//BTB Data array 写使能和BTB TAG ARRAY一样
 //==========================================================
 //             Write Enable to BTB Data array
 //==========================================================
@@ -357,7 +404,7 @@ else
   btb_data_wen[3:0] = 4'b1111;
 // &CombEnd; @160
 end
-
+//BTB Data array 写入内容
 //==========================================================
 //             Write Data to BTB Data array
 //==========================================================
@@ -365,6 +412,32 @@ end
 assign btb_data_din[43:0] = {refill_buf_way_pred[1:0], refill_buf_target_pc[19:0],
                              refill_buf_way_pred[1:0], refill_buf_target_pc[19:0]};
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//index从refill buffer或者pcgen中来
 //==========================================================
 //                      Index to BTB
 //==========================================================
@@ -391,6 +464,16 @@ else
 // &CombEnd; @186
 end
 
+
+
+
+
+
+
+
+
+//这俩record寄存器用于存档miss prediction的index pc(array 用的 set addr)和target pc(BTB数据,即是跳转目标地址)
+//都从ipdp中来
 //==========================================================
 //      Index PC Record for way pred mistake update
 //==========================================================
@@ -444,6 +527,29 @@ begin
     btb_target_pc_record[19:0] <= btb_target_pc_record[19:0];
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//btb_tag_rd 是tag array 读使能，这里打了一拍
 //==========================================================
 //                Tag Array Data Output
 //==========================================================
@@ -518,6 +624,21 @@ begin
     btb_data_dout_reg[87:0] <= btb_data_dout_reg[87:0];
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//当没有mispred导致目前要重写，那么就把新读出的一行btb tag array数据写入下面4个valid值和4个tag值中
 //BTB Result
 //Selected from memory dout & store reg
 assign btb_mem_way3_valid           = (btb_rd_flop && !ip_way_mispred) 
@@ -544,7 +665,7 @@ assign btb_mem_way1_tag_data[9:0]   = (btb_rd_flop && !ip_way_mispred)
 assign btb_mem_way0_tag_data[9:0]   = (btb_rd_flop && !ip_way_mispred) 
                                     ? btb_tag_dout[9:0] 
                                     : btb_tag_dout_reg[9:0];
-
+//同时读出btb data array的数据: way pred(应该是onehot)和target pc
 assign btb_mem_way3_way_pred[1:0]   = (btb_rd_flop && !ip_way_mispred)
                                     ? btb_data_dout[87:86] 
                                     : btb_data_dout_reg[87:86];
@@ -569,6 +690,20 @@ assign btb_mem_way1_target_pc[19:0] = (btb_rd_flop && !ip_way_mispred)
 assign btb_mem_way0_target_pc[19:0] = (btb_rd_flop && !ip_way_mispred) 
                                     ? btb_data_dout[19:0] 
                                     : btb_data_dout_reg[19:0];
+
+
+
+
+
+
+
+
+
+
+
+
+
+//下面又是同时读写的时候的bypass逻辑，用于选择是把上面从tag array+data array读出来的值写出去呢，还是把buffer的值写出去                                    
 always @(posedge forever_cpuclk or negedge cpurst_b)
 begin
   if(!cpurst_b)
@@ -609,6 +744,25 @@ assign btb_ifdp_way3_pred[1:0]    = btb_mem_way3_way_pred[1:0];
 assign btb_ifdp_way3_tag[9:0]     = btb_mem_way3_tag_data[9:0];
 assign btb_ifdp_way3_vld          = btb_mem_way3_valid && cp0_ifu_btb_en;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//invable的逻辑回头再看,又是这个奇怪的巨大的计数器
 //==========================================================
 //                     INV of BTB
 //==========================================================
@@ -665,6 +819,39 @@ end
 assign btb_ifctrl_inv_done = !btb_inv_on_reg;
 assign btb_ifctrl_inv_on   = btb_inv_on_reg;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//refill buffer的逻辑回头等看完ipctrl再看
 //==========================================================
 //                 BTB Refill Buffer
 //==========================================================
@@ -823,6 +1010,27 @@ assign chgflw_higher_than_ip      = pcgen_btb_chgflw_higher_than_ip;
 assign chgflw_higher_than_addrgen = pcgen_btb_chgflw_higher_than_addrgen;
 assign chgflw_higher_than_if      = pcgen_btb_chgflw_higher_than_if; 
 assign pcgen_stall                = pcgen_btb_stall;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //==========================================================
 //               Interface with Memory
