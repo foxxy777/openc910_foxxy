@@ -334,6 +334,11 @@ parameter PC_WIDTH = 40;
 // &Force("bus","pcgen_bht_ifpc",6,0); @38
 // &Force("bus","ipdp_bht_vpc",38,0); @39
 
+
+
+
+
+//准备写入predict array的wr rd enable / din
 //==========================================================
 //          Signal Input to BHT Predict Array
 //==========================================================
@@ -351,16 +356,16 @@ parameter PC_WIDTH = 40;
 //  e.the cycle RTU flush
 //  f.the cycle after RTU flush
 
-assign bht_pred_array_wr     = bht_inv_on_reg || 
+assign bht_pred_array_wr     = bht_inv_on_reg || //ifctrl来的信号控制的(ifctrl_bht_inv)，要invalidate BHT
                                bht_wr_buf_updt_vld;
 assign bht_pred_array_rd     = after_inv_reg ||
-                               ipctrl_bht_con_br_vld && !lbuf_bht_active_state || 
-                               lbuf_bht_con_br_vld && lbuf_bht_active_state || 
+                               ipctrl_bht_con_br_vld && !lbuf_bht_active_state || //conditional branch （B指令）happen in ip stage && loop buffer 没生效
+                               lbuf_bht_con_br_vld && lbuf_bht_active_state || //loop buffer 里有conditional branch
                                bju_mispred || 
                                after_bju_mispred || 
-                               rtu_ifu_flush || 
+                               rtu_ifu_flush || //RTU发指令给ifu要求flush，相当于要重新取指，所以要重新做预测
                                after_rtu_ifu_flush;
-assign bht_pred_array_cen_b  = !(
+assign bht_pred_array_cen_b  = !( //0有效，所以下面这些情况是让predict array工作的条件，就是wr/rd的条件+cp0_ifu_bht_en
                                   bht_inv_on_reg || 
                                   after_inv_reg  || 
                                   (bht_wr_buf_updt_vld || 
@@ -378,14 +383,14 @@ assign bht_pre_array_clk_en  = bht_inv_on_reg ||
                                bht_pred_array_rd;
                               
 //-------------------Write Enable---------------------------
-assign bht_pred_array_gwen   =  !bht_pred_array_wr;
+assign bht_pred_array_gwen   =  !bht_pred_array_wr; //global write enable 0有效，所以这里是取反
 
 //-------------------Write Bit Enable-----------------------
-assign bht_pred_array_wen_b[31:0] = bht_inv_on_reg 
-                                    ? 32'b0 
-                                    : (bht_wr_buf_pred_updt_sel_b[31:0] |
+assign bht_pred_array_wen_b[31:0] = bht_inv_on_reg //write enable per bit, 0有效
+                                    ? 32'b0   //invalidate BHT, 每bit都要写入，都是0
+                                    : (bht_wr_buf_pred_updt_sel_b[31:0] | //只要更新某对2bit cntr的时候，只有这两个bit要写入，为0
                                        {32{!bht_wr_buf_updt_vld}});
-assign bht_pred_bwen[63:0] = {{2{bht_pred_array_wen_b[31]}}, 
+assign bht_pred_bwen[63:0] = {{2{bht_pred_array_wen_b[31]}}, //上面的32bit bht_pred_array_wen_b拓展成64bit
                               {2{bht_pred_array_wen_b[30]}}, 
                               {2{bht_pred_array_wen_b[29]}}, 
                               {2{bht_pred_array_wen_b[28]}}, 
@@ -417,14 +422,40 @@ assign bht_pred_bwen[63:0] = {{2{bht_pred_array_wen_b[31]}},
                               {2{bht_pred_array_wen_b[ 2]}}, 
                               {2{bht_pred_array_wen_b[ 1]}}, 
                               {2{bht_pred_array_wen_b[ 0]}}};
-
+//准备写入predict array的din
 //==========================================================
 //              Predict Array Data Input
 //==========================================================
 assign bht_pred_array_din[63:0] = bht_inv_on_reg 
-                                ? 64'h3333_3333_3333_3333 
+                                ? 64'h3333_3333_3333_3333 // taken not-taken 数据是交叉的，所以，这里的数据是 0x3333_3333_3333_3333
                                 : bht_wr_buf_pred_updt_val[63:0];
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//predict array的读写地址set index
 //==========================================================
 //                 Predict Array Index
 //==========================================================
@@ -443,7 +474,7 @@ begin
 if(bht_inv_on_reg || after_inv_reg)
   bht_pred_array_index[9:0] = bht_inval_cnt[9:0];
 else if(bht_pred_array_rd)
-  bht_pred_array_index[9:0] = bht_pred_array_rd_index[9:0];
+  bht_pred_array_index[9:0] = bht_pred_array_rd_index[9:0];//具体分了下面5种情况
 else //bht_pred_array_wr
   bht_pred_array_index[9:0] = bht_wr_buf_pred_updt_index[9:0];
 // &CombEnd; @146
@@ -478,6 +509,23 @@ else //ipctrl_bht_con_br_vld
 // &CombEnd; @162
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//sel array的wr rd enalbe / din
 //==========================================================
 //          Signal Input to BHT Select Array
 //==========================================================
@@ -534,6 +582,15 @@ assign bht_sel_array_din[15:0] = bht_inv_on_reg
                                ? 16'b0 
                                : bht_wr_buf_sel_updt_val[15:0];
 
+
+
+
+
+
+
+
+
+//sel array的读写地址set index
 //==========================================================
 //                 Select Array Index
 //==========================================================
@@ -557,6 +614,24 @@ else //bht_sel_array_wr
   bht_sel_array_index[6:0] = bht_wr_buf_sel_updt_index[6:0];
 // &CombEnd; @234
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //==========================================================
 //                GHR Update Gate Clock
@@ -587,6 +662,25 @@ assign bht_ghr_updt_clk_en = bht_inv_on_reg ||
                               ipctrl_bht_con_br_gateclk_en || 
                               lbuf_bht_con_br_vld);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//RTU GHR:根据rtu更新的22bit GHR
 //==========================================================
 //                   Update RTU GHR
 //==========================================================
@@ -619,6 +713,7 @@ always @( rtu_ifu_retire2_condbr_taken
        or rtu_ifu_retire2_condbr
        or rtu_ifu_retire0_condbr)
 begin
+  //根据下面这个三个值，来更新22bit的rtughr_pre
 case({rtu_ifu_retire0_condbr, rtu_ifu_retire1_condbr, rtu_ifu_retire2_condbr})
   3'b000  : rtughr_pre[21:0] =  rtughr_reg[21:0];
   3'b001  : rtughr_pre[21:0] = {rtughr_reg[20:0], rtu_ifu_retire2_condbr_taken};
@@ -638,6 +733,24 @@ endcase
 // &CombEnd; @295
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//VGHR:根据ifu更新的22bit GHR  这回头要重点研究一下
 //==========================================================
 //                   Update VGHR
 //==========================================================
@@ -656,8 +769,8 @@ begin
     vghr_reg[21:0] <= 22'b0;
   else if(bht_inv_on_reg)
     vghr_reg[21:0] <= 22'b0;
-  else if(rtu_ifu_flush && cp0_ifu_bht_en)
-    vghr_reg[21:0] <= rtughr_reg[21:0];
+  else if(rtu_ifu_flush && cp0_ifu_bht_en) //rtu告诉ifu要flush，拿rtu的ghr来更新
+    vghr_reg[21:0] <= rtughr_reg[21:0]; 
   else if(ghr_updt_vld && iu_ifu_bht_check_vld)
     vghr_reg[21:0] <= {bju_ghr[20:0], iu_ifu_bht_condbr_taken};
   else if(ghr_updt_vld && !iu_ifu_bht_check_vld)
@@ -670,6 +783,36 @@ begin
     vghr_reg[21:0] <= vghr_reg[21:0];
 end 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//用以获取select array的结果data
 //==========================================================
 //              Select Array Final Result
 //==========================================================
@@ -695,7 +838,7 @@ gated_clk_cell  x_sel_reg_clk (
 //           .module_en      (cp0_ifu_icg_en) @341
 //         ); @342
 assign sel_reg_clk_en = sel_rd_flop || bht_inv_on_reg;
-
+//select array结果打拍
 always @(posedge sel_reg_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
@@ -707,7 +850,7 @@ begin
   else
     bht_sel_data_reg[15:0] <= bht_sel_data_reg[15:0];
 end
-
+//这个用来决定select array结果要不要打拍
 //flop bht_sel_array_rd
 always @(posedge forever_cpuclk or negedge cpurst_b)
 begin
@@ -720,11 +863,13 @@ begin
   else
     sel_rd_flop <= 1'b0;
 end
-
+//真正的select array结果
 //select sel data from memory dout or memory flop reg
 assign bht_sel_data[15:0]     = (sel_rd_flop) 
                               ? bht_sel_data_out[15:0] 
                               : bht_sel_data_reg[15:0];
+
+//根据pc的offset来从select array结果中8对2bit cntr中挑选出要的那一个2bit cntr
 // &CombBeg; @374
 always @( pcgen_bht_ifpc[5:3])
 begin
@@ -749,7 +894,16 @@ assign sel_array_val_cur[1:0] = ({2{if_pc_onehot[ 0]}} & bht_sel_data[ 1: 0]) |
                                 ({2{if_pc_onehot[ 5]}} & bht_sel_data[11:10]) |
                                 ({2{if_pc_onehot[ 6]}} & bht_sel_data[13:12]) |
                                 ({2{if_pc_onehot[ 7]}} & bht_sel_data[15:14]);
+//把8对2bit counter中挑选的结果打一拍
+always @(posedge forever_cpuclk or negedge cpurst_b)
+begin
+  if(!cpurst_b)
+    sel_array_val_flop[1:0] <= 2'b00;
+  else
+    sel_array_val_flop[1:0] <= sel_array_val[1:0];
+end
 
+//下面这俩目前还不清楚
 //When 32 Bit con_br locate at H8
 //BHT Predict infor flop to IP stage should use the value of last cycle
 assign memory_sel_array_result[1:0] = (ipctrl_bht_more_br || ipdp_bht_h0_con_br)
@@ -760,19 +914,32 @@ assign sel_array_val[1:0]           = (wr_buf_hit)
                                     ? wr_buf_sel_array_result[1:0]
                                     : memory_sel_array_result[1:0];
 
-always @(posedge forever_cpuclk or negedge cpurst_b)
-begin
-  if(!cpurst_b)
-    sel_array_val_flop[1:0] <= 2'b00;
-  else
-    sel_array_val_flop[1:0] <= sel_array_val[1:0];
-end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//根据sel array结果，从predict array中挑选出要的那个32bit结果，IP阶段用
 //==========================================================
 //              Predict Array Flop Result
 //==========================================================
 //-----------------Memory Data Out--------------------------
 //Data read out from pre_array memory dout
+//为什么是分开来存的
 assign bht_pre_taken_data[31:0]  = {bht_pre_data_out[61:60],
                                     bht_pre_data_out[57:56],
                                     bht_pre_data_out[53:52],
@@ -830,6 +997,7 @@ gated_clk_cell  x_pre_reg_clk (
 //         ); @463
 assign pre_reg_clk_en = pre_rd_flop || bht_inv_on_reg;
 
+//这里是predict array真正取出来要用的数据
 //Memory data output reg updata rule:
 //  a.if pre_rd_flop == 1, memory data output reg write data in
 //  b.if pre_rd_flop != 1, memory data output reg hold origin value
@@ -870,6 +1038,7 @@ begin
     pre_rd_flop <= 1'b0;
 end
 
+//这里是predict array要用的数据放wire上
 //pipe taken & ntaken data to be selected in IP stage
 // &CombBeg; @507
 always @( bht_pre_taken_data[31:0]
@@ -905,6 +1074,30 @@ else
 // &CombEnd; @523
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //==========================================================
 //                  BHT Wirte Buffer
 //==========================================================
@@ -913,8 +1106,9 @@ end
 //2.any valid entry in write buffer &&
 //3.no read request(include select array and predictarra y)
 assign bht_wr_buf_updt_vld_for_gateclk = (bju_check_updt_vld || bht_wr_buf_not_empty); 
+//
 assign bht_wr_buf_updt_vld       = (bju_check_updt_vld || 
-                                    bht_wr_buf_not_empty) && 
+                                    bht_wr_buf_not_empty) && //wr buffer not empty且要更新，那么就从wrbuffer中取数据更新bht
                                    !(
                                       after_inv_reg || 
                                       ipctrl_bht_con_br_vld || 
@@ -924,11 +1118,11 @@ assign bht_wr_buf_updt_vld       = (bju_check_updt_vld ||
                                       pcgen_bht_chgflw && !lbuf_bht_active_state ||
                                       pcgen_bht_seq_read
                                     );
-
+//pred_array_check_updt_vld, sel_array_check_updt_vld就是根据下面的bju结果来判断要不要把这个结果写入wr buffer
 assign bju_check_updt_vld        = (pred_array_check_updt_vld || 
                                    sel_array_check_updt_vld) && 
                                    iu_ifu_bht_check_vld;
-
+//更新predict array条件：BJU结果 非00或11且预测正确(非饱和)
 assign pred_array_check_updt_vld = !( ( (bju_pred_rst[1:0] == 2'b00) && //saturated
                                         !iu_ifu_bht_condbr_taken 
                                       ) || 
@@ -945,7 +1139,7 @@ assign sel_array_check_updt_vld  = !( ( (bju_sel_rst[1:0] == 2'b00) && //saturat
                                       ) ||  
                                       ( (bju_sel_rst[1] == 1'b0) && //bi-mode logic
                                         iu_ifu_bht_condbr_taken && 
-                                        !iu_ifu_chgflw_vld
+                                        !iu_ifu_chgflw_vld  //?
                                       ) || 
                                       ( (bju_sel_rst[1] == 1'b1) && //bi-mode logic
                                         !iu_ifu_bht_condbr_taken && 
@@ -992,6 +1186,7 @@ assign wr_buf_clk_en = bju_check_updt_vld ||
                        bht_inv_on_reg || 
                        ifctrl_bht_inv;
 
+//这个create retire pointer就是个4bit左移的onehot.相当于fifo的wr addr/rd addr
 //Write Buffer has 4 Entry
 //Use one-hot pointer
 always @(posedge wr_buf_clk or negedge cpurst_b)
@@ -1026,13 +1221,14 @@ assign entry_retire[3:0] = {4{bht_wr_buf_retire_vld}} &
 //==========================================================
 //             Four Write Buffer Entry
 //==========================================================
+//write buffer内容，实际上就是bju的结果
 assign entry_updt_data[36:0] = {
                                  //iu_ifu_bht_check_vld,
                                  iu_ifu_bht_condbr_taken,
                                  bju_sel_rst[1:0],
                                  bju_pred_rst[1:0],
-                                 bju_ghr[21:0],
-                                 iu_ifu_cur_pc[12:3]
+                                 bju_ghr[21:0], //22bit,表示要写入的predict array的set位置，完全从这22bit中出来
+                                 iu_ifu_cur_pc[12:3] //10bit，表示要写入的select array的set位置，完全从这10bit中出来
                                };
 
 //Entry 0
@@ -1042,7 +1238,7 @@ begin
     entry0_vld <= 1'b0;
   else if(bht_inv_on_reg)
     entry0_vld <= 1'b0;
-  else if(entry_create[0])
+  else if(entry_create[0]) //valid bit置1条件，也就是bju有更新的需求
     entry0_vld <= 1'b1;
   else if(entry_retire[0])
     entry0_vld <= 1'b0;
@@ -1200,6 +1396,8 @@ endcase
 // &CombEnd; @790
 end
 
+
+//更新的值可能来自buffer或者BJU的判断结果
 //Cur info to update BHT
 //May come from entry data or BJU data
 // &CombBeg; @794
@@ -1217,11 +1415,11 @@ always @( buf_cur_pc[9:0]
 begin
 if(entry_vld)
 begin
-  cur_condbr_taken  = buf_condbr_taken;
+  cur_condbr_taken  = buf_condbr_taken;  //不同点
   cur_sel_rst[1:0]  = buf_sel_rst[1:0];
   cur_pred_rst[1:0] = buf_pred_rst[1:0];
   cur_ghr[21:0]     = buf_ghr[21:0];
-  cur_cur_pc[9:0]   = buf_cur_pc[9:0];
+  cur_cur_pc[9:0]   = buf_cur_pc[9:0];  //不同点
 end
 else
 begin
@@ -1234,6 +1432,23 @@ end
 // &CombEnd; @811
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //==========================================================
 //             predict array updt data
 //==========================================================
@@ -1241,6 +1456,7 @@ end
 always @( cur_pred_rst[1:0]
        or cur_condbr_taken)
 begin
+  //根据predict array的结果和当前的condbr结果来更新predict array
 case({cur_pred_rst[1:0],cur_condbr_taken})
   3'b001  : pred_array_updt_data[1:0] = 2'b01;
   3'b011  : pred_array_updt_data[1:0] = 2'b10;
@@ -1256,7 +1472,7 @@ endcase
 end
 
 //Select 13:4 as pred array updt index
-assign bht_wr_buf_pred_updt_index[9:0] = {cur_ghr[13:10],{cur_ghr[9:4]^cur_ghr[21:16]}};
+assign bht_wr_buf_pred_updt_index[9:0] = {cur_ghr[13:10],{cur_ghr[9:4]^cur_ghr[21:16]}};//这就是知乎图上的pred array updt index
 
 //==========================================================
 //             select array updt data
@@ -1265,6 +1481,7 @@ assign bht_wr_buf_pred_updt_index[9:0] = {cur_ghr[13:10],{cur_ghr[9:4]^cur_ghr[2
 always @( cur_condbr_taken
        or cur_sel_rst[1:0])
 begin
+  //根据select array的结果和当前的condbr结果来更新select array
 case({cur_sel_rst[1:0],cur_condbr_taken})
   3'b001  : sel_array_updt_data[1:0] = 2'b01;
   3'b011  : sel_array_updt_data[1:0] = 2'b10;
@@ -1279,7 +1496,7 @@ endcase
 // &CombEnd; @848
 end
 
-assign bht_wr_buf_sel_updt_index[6:0] = cur_cur_pc[9:3];
+assign bht_wr_buf_sel_updt_index[6:0] = cur_cur_pc[9:3]; //#1312 iu_ifu_cur_pc[12:3],这就是图上的select array updt index
 
 //==========================================================
 //                sel_array_updt_sel_b
@@ -1301,6 +1518,7 @@ endcase
 // &CombEnd; @867
 end
 
+//设置mask来选择要更新的2bit
 //==========================================================
 //                pred_array_updt_sel_b
 //==========================================================
@@ -1352,6 +1570,31 @@ end
 assign bht_wr_buf_pred_updt_val[63:0] = {32{pred_array_updt_data[1:0]}};
 assign bht_wr_buf_sel_updt_val[15:0]  = { 8{sel_array_updt_data[1:0]}};
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//predict array 结果送去ipdp
 //==========================================================
 //                Pipe Data to IP Stage
 //==========================================================
@@ -1407,9 +1650,11 @@ end
 assign ip_vld = ipctrl_bht_vld || 
                 after_rtu_ifu_flush || 
                 after_bju_mispred;
+//这部分完全就是知乎的图上标的addr[6:3]^GHR[3:0]的结果,一共4bit，表达16对2bit cntr
 //-------------Pre Array offset One-hot---------------------
 //Predict Array offset = vghr[3:0] ^ pc[7:4]
 //And then trans it to one-hot
+//回头细看一下0，1的区别：ip con_branch valid or not
 assign pre_offset_ip_0[3:0] = ipdp_bht_vpc[6:3]   ^ pre_vghr_offset_0[3:0];
 assign pre_offset_ip_1[3:0] = ipdp_bht_vpc[6:3]   ^ pre_vghr_offset_1[3:0];
 assign pre_offset_if_0[3:0] = pcgen_bht_ifpc[6:3] ^ pre_vghr_offset_0[3:0];
@@ -1475,6 +1720,7 @@ assign pre_offset_onehot_if[15:0] = (ipctrl_bht_con_br_vld)
                                     ? pre_offset_onehot_if_1[15:0]
                                     : pre_offset_onehot_if_0[15:0];
 
+//pre_vghr_offset_0 和 pre_vghr_offset_1分别是两个predict array的offset
 // &CombBeg; @1007
 always @( pre_offset_ip_0[3:0])
 begin
@@ -1588,6 +1834,26 @@ begin
     bht_ipdp_pre_offset_onehot[15:0] <= bht_ipdp_pre_offset_onehot[15:0];
 end
 // &Force("output","bht_ipdp_pre_offset_onehot"); @1107
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //-------------------Vghr pipe tp IP------------------------
 // &CombBeg; @1110
@@ -1706,6 +1972,32 @@ begin
     after_rtu_ifu_flush <= 1'b0;
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //==========================================================
 //               Invalidation of BHT
 //==========================================================
@@ -1733,9 +2025,9 @@ always @(posedge bht_inv_cnt_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
     bht_inval_cnt_pre[9:0] <= 10'b0;
-  else if(bht_inv_on_reg)
+  else if(bht_inv_on_reg) //表示Invalidation正在进行中，进行中就不断减一
     bht_inval_cnt_pre[9:0] <= bht_inval_cnt_pre[9:0] - 10'b1;
-  else if(ifctrl_bht_inv)
+  else if(ifctrl_bht_inv)  //离谱，怎么是个这么大的数字
     bht_inval_cnt_pre[9:0] <= 10'b1111111111;
   else
     bht_inval_cnt_pre[9:0] <= bht_inval_cnt_pre[9:0];
@@ -1747,7 +2039,7 @@ always @(posedge bht_inv_cnt_clk or negedge cpurst_b)
 begin
   if(!cpurst_b)
     bht_inv_on_reg <= 1'b0;
-  else if(!(|bht_inval_cnt[9:0]) && bht_inv_on_reg)
+  else if(!(|bht_inval_cnt[9:0]) && bht_inv_on_reg) //倒数到了0，就停止Invalidation
     bht_inv_on_reg <= 1'b0;
   else if(ifctrl_bht_inv)
     bht_inv_on_reg <= 1'b1;
@@ -1755,6 +2047,24 @@ end
 
 assign bht_ifctrl_inv_done = !bht_inv_on_reg;
 assign bht_ifctrl_inv_on   = bht_inv_on_reg;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //==========================================================
 //                  BHT BYPASS WAY
@@ -1781,8 +2091,9 @@ begin
     bht_sel_array_index_flop[9:0] <= bht_sel_array_index_flop[9:0];
 end
 
+//bypass情况判断逻辑，很简单
 //Write Buffer Bypass Logic
-assign wr_buf_pre_hit_0 = (vghr_reg[20:0] == entry0_data[30:10]);
+assign wr_buf_pre_hit_0 = (vghr_reg[20:0] == entry0_data[30:10]); //左边是要读取predict array数据的set来源,右边是wr buffer中要写入predict array数据的set来源，一样就表示地址重叠了，就可以bypass
 assign wr_buf_pre_hit_1 = (vghr_reg[20:0] == entry1_data[30:10]);
 assign wr_buf_pre_hit_2 = (vghr_reg[20:0] == entry2_data[30:10]);
 assign wr_buf_pre_hit_3 = (vghr_reg[20:0] == entry3_data[30:10]);
@@ -1790,10 +2101,12 @@ assign wr_buf_sel_hit_0 = (bht_sel_array_index_flop[9:0]  == entry0_data[9:0]);
 assign wr_buf_sel_hit_1 = (bht_sel_array_index_flop[9:0]  == entry1_data[9:0]);
 assign wr_buf_sel_hit_2 = (bht_sel_array_index_flop[9:0]  == entry2_data[9:0]);
 assign wr_buf_sel_hit_3 = (bht_sel_array_index_flop[9:0]  == entry3_data[9:0]);
+
 assign wr_buf_hit_0   = wr_buf_pre_hit_0 && wr_buf_sel_hit_0 && entry0_vld;
 assign wr_buf_hit_1   = wr_buf_pre_hit_1 && wr_buf_sel_hit_1 && entry1_vld;
 assign wr_buf_hit_2   = wr_buf_pre_hit_2 && wr_buf_sel_hit_2 && entry2_vld;
 assign wr_buf_hit_3   = wr_buf_pre_hit_3 && wr_buf_sel_hit_3 && entry3_vld;
+
 assign wr_buf_hit     = (
                           wr_buf_hit_0 || 
                           wr_buf_hit_1 || 
@@ -1802,7 +2115,8 @@ assign wr_buf_hit     = (
                         ) && 
                         wr_buf_rd;
 assign wr_buf_rd      = sel_rd_flop && pre_rd_flop;
-  
+
+//bypass处理，直接把wrbuffer中的2bit cntr给rd出去
 // &CombBeg; @1289
 always @( entry3_sel_updt_data[1:0]
        or entry1_sel_updt_data[1:0]
@@ -1891,6 +2205,23 @@ endcase
 // &CombEnd; @1354
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //==========================================================
 //                Interface to Ind BTB
 //==========================================================
@@ -1935,13 +2266,33 @@ assign bju_pred_rst[1:0] = {iu_ifu_bht_pred, iu_ifu_chk_idx[24]};
 assign bju_sel_rst[1:0]  = iu_ifu_chk_idx[23:22];
 assign bju_ghr[21:0]     = iu_ifu_chk_idx[21:0];
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //==========================================================
 //                 Interface to Memory
 //==========================================================
 // &Instance("ct_ifu_bht_pre_array", "x_ct_ifu_bht_pre_array"); @1407
-ct_ifu_bht_pre_array  x_ct_ifu_bht_pre_array (
+ct_ifu_bht_pre_array  x_ct_ifu_bht_pre_array (  //ct_ifu_bht_pre_array.v 1024*64
   .bht_pre_array_clk_en (bht_pre_array_clk_en),
-  .bht_pre_data_out     (bht_pre_data_out    ),
+  .bht_pre_data_out     (bht_pre_data_out    ),//pre array output data
   .bht_pred_array_cen_b (bht_pred_array_cen_b),
   .bht_pred_array_din   (bht_pred_array_din  ),
   .bht_pred_array_gwen  (bht_pred_array_gwen ),
@@ -1954,14 +2305,14 @@ ct_ifu_bht_pre_array  x_ct_ifu_bht_pre_array (
 );
 
 // &Instance("ct_ifu_bht_sel_array", "x_ct_ifu_bht_sel_array"); @1408
-ct_ifu_bht_sel_array  x_ct_ifu_bht_sel_array (
+ct_ifu_bht_sel_array  x_ct_ifu_bht_sel_array ( //ct_ifu_bht_sel_array.v 128*16
   .bht_sel_array_cen_b  (bht_sel_array_cen_b ),
   .bht_sel_array_clk_en (bht_sel_array_clk_en),
   .bht_sel_array_din    (bht_sel_array_din   ),
   .bht_sel_array_gwen   (bht_sel_array_gwen  ),
   .bht_sel_array_index  (bht_sel_array_index ),
   .bht_sel_bwen         (bht_sel_bwen        ),
-  .bht_sel_data_out     (bht_sel_data_out    ),
+  .bht_sel_data_out     (bht_sel_data_out    ),//sel array output data
   .cp0_ifu_icg_en       (cp0_ifu_icg_en      ),
   .cp0_yy_clk_en        (cp0_yy_clk_en       ),
   .forever_cpuclk       (forever_cpuclk      ),

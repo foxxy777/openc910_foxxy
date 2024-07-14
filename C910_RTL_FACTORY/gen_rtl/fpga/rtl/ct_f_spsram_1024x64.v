@@ -51,7 +51,7 @@ begin
     addr_holding[ADDR_WIDTH-1:0] <= A[ADDR_WIDTH-1:0];
   end
 end
-
+//可以看出CEN是0有效，CEN是1则用上次0有效的地址
 assign addr[ADDR_WIDTH-1:0] = CEN ? addr_holding[ADDR_WIDTH-1:0]
                                   : A[ADDR_WIDTH-1:0];
 
