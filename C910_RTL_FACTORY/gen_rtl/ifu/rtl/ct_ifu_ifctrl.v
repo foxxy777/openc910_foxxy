@@ -495,6 +495,19 @@ assign ifu_yy_xx_no_op = ifu_no_op_flop && !l1_refill_ifctrl_start_for_gateclk;
 assign ifu_had_no_op = ifu_yy_xx_no_op;
 // &Force("output","ifu_no_op_req"); @62
 // &Force("output","ifu_yy_xx_no_op"); @63
+
+
+
+
+
+
+
+
+
+
+
+
+//指示当下IF stage的inst是否有效
 //==========================================================
 //             IF Stage Data Valid Signal
 //==========================================================
@@ -503,15 +516,24 @@ assign ifu_had_no_op = ifu_yy_xx_no_op;
 //  2.Refill     on : Data from Refill, Data Valid only when trans_cmplt && PC_hit
 //  Refill on Valid When Enter Refill SM && NOT ask Change Flow,Which Means
 //  WFD1-WFD4 or REQ 
-                           //第一种情况：取icache数据的时候，没有miss也没有way prediction错误
-assign if_inst_data_vld = (!l1_refill_ifctrl_refill_on && // refill： icache miss导致要从L2取数据
-                           !(pcgen_ifctrl_way_pred[1:0] == 2'b0) ) || //not way_pred stall //如果way prediction错误，会导致要去另外一个way取数据，从而带来stall
+                           //第一种情况：取icache数据的时候，没有miss导致的refill 也没有way prediction错误
+                           // refill： icache miss导致要从L2取数据
+                           // l1_refill_ifctrl_refill_on 来自于l1_refill_ifctrl.v，表示refill FSM正在运行，因此当下这个inst不valid
+assign if_inst_data_vld = (!l1_refill_ifctrl_refill_on && 
+                           //pcgen.v 发往ifctrl的way_pred 结果
+                           //如果这里==0,表示way prediction错误，会导致要去另外一个way取数据，因此这个way的数据不valid
+                           !(pcgen_ifctrl_way_pred[1:0] == 2'b0) ) || 
+
+
                            //第二种情况：取icache数据的时候，miss了，但是refill完成了，并且要的数据正好是refill的数据
-                          (l1_refill_ifctrl_refill_on &&  //这里应该是说，发送refill,并且refill完成了，并且要的数据正好是refill的数据
+                          (l1_refill_ifctrl_refill_on &&  
                            l1_refill_ifctrl_trans_cmplt && 
                            refill_pc_hit);
 assign refill_pc_hit = (pcgen_ifctrl_pc[PC_WIDTH-2:3] == l1_refill_ifctrl_pc[PC_WIDTH-2:3]);
 
+
+
+//IF的PC是否有效
 //==========================================================
 //             IF Stage PC Valid Signal
 //==========================================================
