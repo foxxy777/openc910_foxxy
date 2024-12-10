@@ -128,7 +128,7 @@ assign p2_0[74:0]   = {6'b0,sign_not[8],part_product8[65:0],h7[1:0]};
 assign p2_1[74:0]   = {4'b0,sign_not[9],part_product9[65:0],h8[1:0],2'b0};
 assign p2_2[74:0]   = {2'b0,sign_not[10],part_product10[65:0],h9[1:0],4'b0};
 assign p2_3[74:0]   = {sign_not[11],part_product11[65:0],h10[1:0],6'b0};
-assign p2_cin[74:0] = {cout0_2[73:0],1'b0}; 
+assign p2_cin[74:0] = {cout0_2[73:0],1'b0};  
 
 assign p3_0[74:0]   = {6'b0,sign_not[12],part_product12[65:0],h11[1:0]};
 assign p3_1[74:0]   = {4'b0,sign_not[13],part_product13[65:0],h12[1:0],2'b0};
